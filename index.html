@@ -16,6 +16,7 @@
     --accent2: #7c4dff;
     --accent3: #00e676;
     --warn: #ff5252;
+    --gold: #ffc107;
     --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Courier New', monospace;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -82,6 +83,19 @@ body {
     font-family: var(--font-mono);
     font-size: 11px;
     color: var(--accent);
+    background: rgba(0,0,0,0.6);
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    max-width: 90%;
+}
+.canvas-chapter {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--gold);
     background: rgba(0,0,0,0.6);
     padding: 4px 8px;
     border-radius: 4px;
@@ -188,6 +202,8 @@ body {
 }
 .stat-label { color: var(--text-dim); }
 .stat-value { font-family: var(--font-mono); color: var(--text); }
+.stat-value.highlight { color: var(--gold); font-weight: 600; }
+.stat-value.civ { color: var(--accent); font-weight: 600; }
 /* Float check */
 .check-bar {
     height: 6px;
@@ -216,11 +232,11 @@ body {
     flex-wrap: wrap;
 }
 .timeline-node {
-    width: 22px; height: 22px;
+    width: 18px; height: 18px;
     border-radius: 50%;
     border: 2px solid var(--border);
     background: var(--bg-card);
-    font-size: 9px;
+    font-size: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -262,23 +278,40 @@ body {
     flex: 1;
     height: 10px;
     border-radius: 5px;
-    background: linear-gradient(to right, #000033, #0000aa, #00aaff, #aaff00, #ffaa00, #ff0000);
+    background: linear-gradient(to right, #000033, #0000aa, #00aaff, #aaff00, #ffaa00, #ff0000, #ffffff);
 }
+/* Event log */
+.event-log {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    max-height: 120px;
+    overflow-y: auto;
+    line-height: 1.6;
+}
+.event-log .event {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.event-log .event .time { color: var(--accent2); }
+.event-log .event .text { color: var(--text); }
+.event-log .event.critical .text { color: var(--gold); }
 </style>
 </head>
 <body>
 
 <div class="header">
     <h1>东山信息宇宙学 · 虚拟宇宙演化引擎</h1>
-    <div class="subtitle">浮点离散截断映射 · 无量纲闭环常数 · 零经验参数</div>
+    <div class="subtitle">浮点离散截断映射 · 无量纲闭环常数 · 零经验参数 · 内生暴胀/星系/文明</div>
 </div>
 
 <div class="main">
     <!-- ===== Canvas Area ===== -->
     <div class="canvas-area">
         <div class="canvas-wrapper">
-            <canvas id="universe-canvas" width="256" height="256"></canvas>
+            <canvas id="universe-canvas" width="128" height="128"></canvas>
             <div class="canvas-overlay" id="overlay">tick: 0</div>
+            <div class="canvas-chapter" id="chapter-label"></div>
         </div>
         <div class="legend">
             <span>低密度</span>
@@ -288,18 +321,19 @@ body {
         <div class="controls">
             <button class="btn primary" id="btn-play">▶ 演化</button>
             <button class="btn" id="btn-step">单步</button>
+            <button class="btn" id="btn-fast">快进 2000步</button>
+            <button class="btn" id="btn-skip" style="border-color:var(--gold);color:var(--gold)">直达文明</button>
             <button class="btn danger" id="btn-reset">重置</button>
             <div class="slider-group">
                 速率
-                <input type="range" id="speed" min="1" max="20" value="5">
-                <span class="val" id="speed-val">5x</span>
+                <input type="range" id="speed" min="1" max="500" value="50">
+                <span class="val" id="speed-val">50x</span>
             </div>
             <div class="slider-group">
                 网格
                 <input type="range" id="grid-size" min="64" max="256" step="32" value="128">
                 <span class="val" id="grid-val">128</span>
             </div>
-            <span style="color:var(--text-dim);font-size:11px;">D*、g 已移除 — 相互作用完全内生</span>
         </div>
     </div>
 
@@ -311,6 +345,50 @@ body {
             <div class="phase-name" id="phase-name">原始态</div>
             <div class="phase-desc" id="phase-desc">无拓扑连续相位场，全域关联度 C≈1</div>
             <div class="timeline" id="timeline"></div>
+        </div>
+
+        <!-- Cosmic Structures -->
+        <div class="card">
+            <h3>宇宙结构涌现</h3>
+            <div class="stat-row">
+                <span class="stat-label">暴胀因子</span>
+                <span class="stat-value highlight" id="cs-inflation">1.00</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">暴胀状态</span>
+                <span class="stat-value" id="cs-inflation-status">待触发</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">星系数量</span>
+                <span class="stat-value highlight" id="cs-galaxies">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">最大星系恒星数</span>
+                <span class="stat-value" id="cs-stars">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">生命起源点</span>
+                <span class="stat-value" id="cs-life" style="color:var(--accent3)">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">文明数量</span>
+                <span class="stat-value civ" id="cs-civ">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">最高文明等级</span>
+                <span class="stat-value civ" id="cs-tech">0</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;">
+                暴胀/星系/生命/文明均由信息场内生涌现
+            </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="card">
+            <h3>宇宙事件日志</h3>
+            <div class="event-log" id="event-log">
+                <div class="event"><span class="time">[t=0]</span> <span class="text">宇宙初始化，原始相位场涨落</span></div>
+            </div>
         </div>
 
         <!-- Constants -->
@@ -331,6 +409,38 @@ body {
             <div class="const-row">
                 <div class="const-label">等效普朗克常数<span class="formula">h* = ρ·c*·(Δx)²</span></div>
                 <div class="const-value derived" id="c-h">1.0</div>
+            </div>
+        </div>
+
+        <!-- Endogenous Interaction -->
+        <div class="card">
+            <h3>内生相互作用参数</h3>
+            <div class="stat-row">
+                <span class="stat-label">C_th (动态相变阈值)</span>
+                <span class="stat-value" id="e-cth">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">D* (涌现扩散系数 = ⟨C⟩)</span>
+                <span class="stat-value" id="e-dstar">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">G* (涌现引力强度 = 1-⟨C⟩)</span>
+                <span class="stat-value" id="e-gstar">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">活跃链接数</span>
+                <span class="stat-value" id="e-links">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">链接活跃率</span>
+                <span class="stat-value" id="e-ratio">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">引力塌缩链接数</span>
+                <span class="stat-value" id="e-grav-links">--</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;">
+                D*、G* 均由关联函数 C[ρi,ρj] 内生涌现，无外部参数
             </div>
         </div>
 
@@ -359,34 +469,6 @@ body {
             <div class="check-status pass" id="f-status">✓ 约束通过</div>
         </div>
 
-        <!-- Endogenous Interaction -->
-        <div class="card">
-            <h3>内生相互作用参数</h3>
-            <div class="stat-row">
-                <span class="stat-label">C_th (动态相变阈值)</span>
-                <span class="stat-value" id="e-cth">--</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">D* (涌现扩散系数 = ⟨C⟩)</span>
-                <span class="stat-value" id="e-dstar">--</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">活跃链接数</span>
-                <span class="stat-value" id="e-links">--</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">链接活跃率</span>
-                <span class="stat-value" id="e-ratio">--</span>
-            </div>
-            <div class="stat-row">
-                <span class="stat-label">孤立单元数</span>
-                <span class="stat-value" id="e-isolated">--</span>
-            </div>
-            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;">
-                D*、耦合强度均由关联函数 C[ρi,ρj] 内生涌现，无外部参数
-            </div>
-        </div>
-
         <!-- Stats -->
         <div class="card">
             <h3>实时统计</h3>
@@ -404,10 +486,10 @@ body {
             </div>
             <div class="stat-row">
                 <span class="stat-label">全域信息测度</span>
-                <span class="stat-value" id="s-info">0</span>
+                <span class="stat-value" id="s-info">0.00</span>
             </div>
             <div class="stat-row">
-                <span class="stat-label">聚类数</span>
+                <span class="stat-label">密度峰数</span>
                 <span class="stat-value" id="s-clusters">0</span>
             </div>
             <div class="stat-row">
@@ -423,22 +505,45 @@ body {
 
 // ============================================================
 //  虚拟宇宙演化引擎 (JavaScript 2D 版)
-//  浮点离散截断映射 · 无量纲闭环常数
+//  浮点离散截断映射 · 无量纲闭环常数 · 内生暴胀/星系/文明
+//
+//  核心创新：引力塌缩从关联函数内生涌现
+//    - 活跃链接 (C > C_th): 扩散（平滑，信息从高密度流向低密度）
+//    - 非活跃链接 (C ≤ C_th): 引力塌缩（聚集，信息从低密度流向高密度）
+//    - 引力强度 G* = 1 - ⟨C⟩（完全内生，无外部参数）
 // ============================================================
 
 // ---- 配置 ----
-const EPS_MACH = 2.220446049250313e-16;  // double 机器 epsilon
-const DELTA_PSI = 1e-12;                   // 信息分辨阈值
-const RHO = 1.0;                           // 基准能量密度
+const EPS_MACH = 2.220446049250313e-16;
+const DELTA_PSI = 1e-12;
+const RHO = 1.0;
 
+// ---- 12阶段宇宙演化时间线（极速版）----
 const PHASES = [
-    { name: '原始态',     desc: '无拓扑连续相位场，全域关联度 C≈1', threshold: 0 },
-    { name: '关联分化',   desc: '相位差自发累积，部分组态关联度下降', threshold: 20 },
-    { name: '邻域诞生',   desc: '关联度低于 C_th 的组态形成聚类，拓扑涌现', threshold: 80 },
-    { name: '度量诱导',   desc: '迹距离诱导度量结构，空间概念涌现', threshold: 200 },
-    { name: '自发膨胀',   desc: '全局平均关联度单调下降，拓扑网络拉伸', threshold: 500 },
-    { name: '常数内生',   desc: 'c*, h* 由截断尺度内生确定，物理常数确立', threshold: 1000 },
+    // 第一章 · 信息起源
+    { name: '原始态',     desc: '无拓扑连续相位场，全域关联度 C≈1', threshold: 0,    chapter: 1 },
+    { name: '关联分化',   desc: '相位差自发累积，部分组态关联度下降', threshold: 3,    chapter: 1 },
+    { name: '邻域诞生',   desc: '关联度低于 C_th 的组态形成聚类，拓扑涌现', threshold: 8,    chapter: 1 },
+    { name: '度量诱导',   desc: '迹距离诱导度量结构，空间概念涌现', threshold: 15,   chapter: 1 },
+    { name: '自发膨胀',   desc: '全局平均关联度单调下降，拓扑网络拉伸', threshold: 25,  chapter: 1 },
+    { name: '常数内生',   desc: 'c*, h* 由截断尺度内生确定，物理常数确立', threshold: 35,  chapter: 1 },
+    // 第二章 · 宇宙诞生
+    { name: '暴胀纪元',   desc: '关联度急剧崩塌，拓扑指数级膨胀 — 内生暴胀', threshold: 50,   chapter: 2, inflation: true },
+    { name: '物质涌现',   desc: '高密度信息集群固化，物质结构从信息场凝聚', threshold: 90,   chapter: 2 },
+    // 第三章 · 结构形成
+    { name: '星系诞生',   desc: '密度涨落放大，大尺度结构网络形成', threshold: 130,  chapter: 3, galaxy: true },
+    { name: '恒星点亮',   desc: '高密度核心点燃，能量反馈重塑周围介质', threshold: 180,  chapter: 3 },
+    // 第四章 · 文明涌现
+    { name: '生命起源',   desc: '自复制信息结构在温和区涌现', threshold: 250, chapter: 4, life: true },
+    { name: '文明诞生',   desc: '信息处理网络自组织，元认知回路闭合', threshold: 400, chapter: 4, civilization: true },
 ];
+
+const CHAPTERS = {
+    1: '第一章 · 信息起源',
+    2: '第二章 · 宇宙诞生',
+    3: '第三章 · 结构形成',
+    4: '第四章 · 文明涌现',
+};
 
 // ---- 引擎状态 ----
 let gridN = 128;
@@ -446,160 +551,456 @@ let psi = null;
 let psiNext = null;
 let tick = 0;
 let running = false;
-let speed = 5;
+let speed = 50;
 let rafId = null;
 
-// 内生参数（由系统状态涌现，非外部输入）
-let endoCTh = 1.0;       // 动态相变阈值 C_th = ⟨C⟩
-let endoDStar = 1.0;     // 涌现扩散系数 D* = ⟨C⟩
-let endoLinks = 0;       // 活跃链接数
-let endoIsolated = 0;    // 孤立单元数
-let endoAvgC = 1.0;      // 全局平均关联度
+// 预分配缓冲区（性能优化）
+let nIdxCache = null;     // 邻居索引缓存
+let cArrCache = null;     // 关联函数缓存
+let imageDataCache = null; // 像素数据缓存
 
-// ---- 原生信息函数定义（无几何依赖）----
-// 迹距离 D(ρ_i, ρ_j): 衡量两组态可区分程度，取值 [0,1]
+// 内生参数（由系统状态涌现）
+let endoCTh = 1.0;
+let endoDStar = 1.0;
+let endoGStar = 0.0;      // 涌现引力强度 = 1 - ⟨C⟩
+let endoLinks = 0;
+let endoGravLinks = 0;    // 引力塌缩链接数
+let endoIsolated = 0;
+let endoAvgC = 1.0;
+
+// 宇宙结构内生状态
+let inflationFactor = 1.0;
+let inflationFlash = 0;
+let inflationTriggered = false;
+let inflationTicks = 0;
+let inflationDone = false;
+let galaxies = [];
+let civilizations = [];
+let lifeOrigins = [];
+let lifeFirstLogged = false;
+let civFirstLogged = false;
+let galaxyFirstLogged = false;
+let prevAvgC = 1.0;
+let cosmicAge = 0;
+
+// 事件日志
+let events = [];
+
+// ---- 原生信息函数（无几何依赖）----
 function traceDistance(a, b) {
     const diff = Math.abs(a - b);
     const norm = Math.abs(a) + Math.abs(b) + DELTA_PSI;
     return Math.min(1, diff / norm);
 }
 
-// 关联函数 C[ρ_i, ρ_j]: 衡量相位联动强度，取值 [0,1]
-// C = 1 - D（关联度 = 迹距离的补）
 function correlation(a, b) {
     return 1 - traceDistance(a, b);
 }
 
-// ---- 初始化 ----
-function initGrid(n) {
-    gridN = n;
-    psi = new Float64Array(n * n);
-    psiNext = new Float64Array(n * n);
-    // 随机种子：模拟原始连续相位场涨落
-    let seed = 42;
-    for (let i = 0; i < n * n; i++) {
-        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-        const r = (seed / 0x7fffffff) * 2 - 1;
-        psi[i] = r * 0.5;
-    }
-    // 注入高密度种子点
-    const cx = n >> 1, cy = n >> 1;
-    psi[cy * n + cx] = 5.0;
-    psi[(cy - (n>>3)) * n + (cx - (n>>3))] = 3.0;
-    psi[(cy + (n>>3)) * n + (cx + (n>>3))] = 3.5;
-    tick = 0;
-}
-
-// ---- 辅助：索引（周期边界）----
+// ---- 索引（周期边界）----
 function idx(x, y, n) {
     x = ((x % n) + n) % n;
     y = ((y % n) + n) % n;
     return y * n + x;
 }
 
-// ---- 内生演化一步 ----
-// 核心原理：
-//   1. 计算所有相邻单元对的关联函数 C[ρi,ρj] 和迹距离 D(ρi,ρj)
-//   2. 动态阈值 C_th = ⟨C⟩（全局平均关联度，由系统状态涌现）
-//   3. 仅 C > C_th 的链接为活跃链接，参与信息流动
-//   4. 涌现扩散系数 D* = ⟨C⟩（不再是外部参数）
-//   5. 非线性反馈内嵌于关联函数：高密度→低关联→链接断开→孤立（引力效应）
-//   6. 无外部 D、g 参数，无预设势函数
-function evolveStep() {
-    const n = gridN;
-    const dpsi = DELTA_PSI;
+// ---- 初始化 ----
+function initGrid(n) {
+    gridN = n;
     const N = n * n;
-    const totalLinks = N * 4;
+    psi = new Float64Array(N);
+    psiNext = new Float64Array(N);
 
-    // 守恒基准
-    let sumBefore = 0;
-    for (let i = 0; i < N; i++) sumBefore += psi[i];
+    // 全正初始场（信息密度，0.3~0.7 微涨落）
+    let seed = 42;
+    for (let i = 0; i < N; i++) {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        const r = seed / 0x7fffffff;
+        psi[i] = 0.3 + r * 0.4;
+    }
 
-    // 预计算4邻居索引
-    const nIdx = new Int32Array(N * 4);
+    // 注入高密度种子（原初涨落）
+    const cx = n >> 1, cy = n >> 1;
+    psi[cy * n + cx] = 2.5;
+    psi[(cy - (n >> 3)) * n + (cx - (n >> 3))] = 2.0;
+    psi[(cy + (n >> 3)) * n + (cx + (n >> 3))] = 2.2;
+    psi[(cy - (n >> 4)) * n + (cx + (n >> 4))] = 1.8;
+    psi[(cy + (n >> 4)) * n + (cx - (n >> 4))] = 1.5;
+
+    // 预计算邻居索引
+    nIdxCache = new Int32Array(N * 4);
     for (let y = 0; y < n; y++) {
         for (let x = 0; x < n; x++) {
             const i = y * n + x;
-            nIdx[i*4]   = idx(x+1, y, n);
-            nIdx[i*4+1] = idx(x-1, y, n);
-            nIdx[i*4+2] = idx(x, y+1, n);
-            nIdx[i*4+3] = idx(x, y-1, n);
+            nIdxCache[i * 4]     = idx(x + 1, y, n);
+            nIdxCache[i * 4 + 1] = idx(x - 1, y, n);
+            nIdxCache[i * 4 + 2] = idx(x, y + 1, n);
+            nIdxCache[i * 4 + 3] = idx(x, y - 1, n);
         }
     }
+    cArrCache = new Float64Array(N * 4);
+
+    // Canvas 与 ImageData
+    canvas.width = n;
+    canvas.height = n;
+    imageDataCache = ctx.createImageData(n, n);
+
+    // 重置状态
+    tick = 0;
+    inflationFactor = 1.0;
+    inflationFlash = 0;
+    inflationTriggered = false;
+    inflationTicks = 0;
+    inflationDone = false;
+    galaxies = [];
+    civilizations = [];
+    lifeOrigins = [];
+    lifeFirstLogged = false;
+    civFirstLogged = false;
+    galaxyFirstLogged = false;
+    prevAvgC = 1.0;
+    cosmicAge = 0;
+    events = [];
+    addEvent(0, '宇宙初始化，原始相位场涨落');
+}
+
+// ---- 事件日志 ----
+function addEvent(t, text, critical) {
+    events.push({ time: t, text: text, critical: !!critical });
+    if (events.length > 50) events.shift();
+}
+
+// ============================================================
+//  内生演化一步（核心算法）
+//
+//  原理：
+//    1. 计算所有相邻单元对的关联函数 C[ρi,ρj]
+//    2. 动态阈值 C_th = ⟨C⟩（全局平均关联度，内生涌现）
+//    3. 活跃链接 (C > C_th): 扩散 — 信息从高密度流向低密度（平滑）
+//    4. 非活跃链接 (C ≤ C_th): 引力塌缩 — 信息从低密度流向高密度（聚集）
+//    5. 引力强度 G* = 1 - ⟨C⟩（完全内生，无外部参数）
+//    6. 量子涨落噪声驱动对称性破缺
+// ============================================================
+function evolveStep() {
+    const n = gridN;
+    const N = n * n;
+    const totalLinks = N * 4;
+    const nIdx = nIdxCache;
+    const cArr = cArrCache;
 
     // Pass 1: 计算所有关联 C[i,j]，求和得到 ⟨C⟩
-    const cArr = new Float64Array(N * 4);
     let sumC = 0;
     for (let i = 0; i < N; i++) {
         for (let d = 0; d < 4; d++) {
-            const j = nIdx[i*4 + d];
+            const j = nIdx[i * 4 + d];
             const c = correlation(psi[i], psi[j]);
-            cArr[i*4 + d] = c;
+            cArr[i * 4 + d] = c;
             sumC += c;
         }
     }
     const avgC = sumC / totalLinks;
-    // 动态相变阈值 C_th = ⟨C⟩（内生涌现）
-    const cTh = avgC;
-    // 涌现扩散系数 D* = ⟨C⟩（不再是滑块参数）
-    const dStar = avgC;
+    const cTh = avgC;           // 动态相变阈值 = ⟨C⟩
+    const dStar = avgC;          // 涌现扩散系数 = ⟨C⟩
+    const gStar = 1 - avgC;     // 涌现引力强度 = 1 - ⟨C⟩
 
-    // Pass 2: 基于活跃链接的关联加权演化
+    // Pass 2: 扩散 + 引力塌缩 演化
     let activeLinks = 0;
+    let gravLinks = 0;
     let isolated = 0;
+
     for (let i = 0; i < N; i++) {
         const cur = psi[i];
-        let weightedDiff = 0;
-        let weightSum = 0;
-        let linkCount = 0;
+        let diffSum = 0;       // 扩散加权差
+        let diffWeight = 0;
+        let gravAcc = 0;       // 引力累积
+        let gravCount = 0;
+
         for (let d = 0; d < 4; d++) {
-            const j = nIdx[i*4 + d];
-            const c = cArr[i*4 + d];
-            // 仅关联度高于阈值的链接为活跃链接
+            const j = nIdx[i * 4 + d];
+            const c = cArr[i * 4 + d];
             if (c > cTh) {
-                weightedDiff += c * (psi[j] - cur);
-                weightSum += c;
-                linkCount++;
+                // 活跃链接：扩散（平滑，信息从高→低）
+                diffSum += c * (psi[j] - cur);
+                diffWeight += c;
                 activeLinks++;
+            } else {
+                // 非活跃链接：引力塌缩（聚集，信息从低→高）
+                gravAcc += (cur - psi[j]);
+                gravCount++;
+                gravLinks++;
             }
         }
 
         let delta = 0;
-        if (weightSum > 0) {
-            // 涌现扩散：D* · Σ C_ij·(ψj - ψi) / Σ C_ij
-            // 非线性反馈已内嵌：高密度→低C→链接断开→无扩散（引力效应）
-            delta = dStar * weightedDiff / weightSum;
+        if (diffWeight > 0) {
+            // 涌现扩散：D* · Σ C·(ψj-ψi) / Σ C
+            delta = dStar * diffSum / diffWeight;
         } else {
-            // 无活跃链接 → 单元孤立 → 不演化（信息拓扑封闭）
             isolated++;
         }
 
+        // 引力塌缩：G* · Σ(ψi-ψj) / n_grav
+        // 暴胀前：强引力(0.3) 创造密度对比度 → 触发暴胀
+        // 暴胀后：弱引力(0.08) + 辐射压 → 平滑梯度 → 温和区
+        const gravCoeff = inflationDone ? 0.08 : 0.3;
+        if (gravCount > 0) {
+            const gravSat = 1.0 / (1.0 + Math.abs(cur) * 0.12);
+            delta += gStar * gravCoeff * gravAcc / gravCount * gravSat;
+        }
+
+        // 辐射压（暴胀后启用：创造密度梯度，形成温和区 — 生命涌现的关键）
+        // 线性项 ρ·G*：指数衰减型分布 → 平滑密度梯度 → 温和区自然形成
+        // 二次项 ρ²·G*：防止极端高密度坍缩
+        if (inflationDone) {
+            delta -= 0.015 * cur * gStar;
+            delta -= 0.004 * cur * cur * gStar;
+        }
+
+        // 量子涨落噪声（暴胀后大幅衰减，允许结构凝聚）
+        const noiseAmp = inflationDone ? 0.0003 : 0.004;
+        delta += (Math.random() - 0.5) * noiseAmp * gStar;
+
         let next = cur + delta;
         // 分辨阈值截断（A4）
-        if (Math.abs(next - cur) < dpsi) next = cur;
-        // 限幅防发散
-        next = Math.max(-10, Math.min(10, next));
+        if (Math.abs(next - cur) < DELTA_PSI) next = cur;
+        // 限幅：暴胀前允许负值（创造对比度），暴胀后下限 0.05（创造温和区）
+        const minVal = inflationDone ? 0.05 : -2;
+        next = Math.max(minVal, Math.min(10, next));
         psiNext[i] = next;
     }
 
     // 交换缓冲区
     const tmp = psi; psi = psiNext; psiNext = tmp;
 
-    // 全域守恒修正（A2）：均值漂移校正
-    let sumAfter = 0;
-    for (let i = 0; i < N; i++) sumAfter += psi[i];
-    const drift = (sumBefore - sumAfter) / N;
-    if (Math.abs(drift) > 1e-15) {
-        for (let i = 0; i < N; i++) psi[i] += drift;
+    // 宇宙冷却（暴胀后缓慢耗散背景能量，增强密度对比度）
+    if (inflationDone) {
+        for (let i = 0; i < N; i++) psi[i] *= 0.9998;
+    }
+
+    // 软归一化（仅防止极端数值发散，允许密度峰充分生长）
+    let maxAbs = 0;
+    for (let i = 0; i < N; i++) {
+        const v = Math.abs(psi[i]);
+        if (v > maxAbs) maxAbs = v;
+    }
+    if (maxAbs > 15) {
+        const scale = 15 / maxAbs;
+        for (let i = 0; i < N; i++) psi[i] *= scale;
     }
 
     // 更新内生参数
     endoCTh = cTh;
     endoDStar = dStar;
+    endoGStar = gStar;
     endoLinks = activeLinks;
+    endoGravLinks = gravLinks;
     endoIsolated = isolated;
     endoAvgC = avgC;
     tick++;
+    if (inflationTriggered) cosmicAge++;
+
+    // ===== 内生宇宙结构涌现 =====
+    detectInflation(avgC);
+    detectGalaxies();
+    detectLifeAndCivilization();
+    prevAvgC = avgC;
+}
+
+// ============================================================
+//  暴胀检测（内生）
+//
+//  触发条件：关联度下降速率超过临界值（相变）
+//  暴胀效应：
+//    1. 注入量子涨落（原初扰动 → 未来星系种子）
+//    2. 创建高密度种子点
+//    3. 视觉闪光效果
+// ============================================================
+function detectInflation(avgC) {
+    const dropRate = prevAvgC - avgC;
+
+    // 暴胀触发：关联度下降到临界值（更早触发，更敏感）
+    if (!inflationTriggered && avgC < 0.85 && dropRate > 0.0002) {
+        inflationTriggered = true;
+        inflationTicks = 0;
+        inflationFlash = 1.0;
+        addEvent(tick, '⚡ 内生暴胀触发！关联度崩塌，拓扑指数级膨胀', true);
+    }
+
+    if (inflationTriggered && inflationTicks < 30) {
+        // 暴胀进行中（30 tick 快速暴胀）
+        inflationFactor = 1 + (1 - avgC) * 8;
+        inflationTicks++;
+        inflationFlash = Math.max(0, inflationFlash - 0.02);
+
+        // 注入量子涨落（原初扰动 — 未来星系的种子）
+        const fluctAmp = 0.5 * (1 - avgC);
+        for (let i = 0; i < gridN * gridN; i++) {
+            psi[i] += (Math.random() - 0.5) * fluctAmp;
+        }
+
+        // 创建强密度种子（暴胀期间的量子涨落峰 → 未来星系核心）
+        if (inflationTicks < 15) {
+            for (let k = 0; k < 5; k++) {
+                const sx = Math.floor(Math.random() * gridN);
+                const sy = Math.floor(Math.random() * gridN);
+                psi[sy * gridN + sx] += 1.5 + Math.random() * 2.0;
+            }
+        }
+
+        if (inflationTicks === 30 && !inflationDone) {
+            inflationDone = true;
+            addEvent(tick, '暴胀结束，原初扰动种子已植入信息场', true);
+        }
+    } else {
+        inflationFactor *= 0.95;
+        if (inflationFactor < 1.01) inflationFactor = 1.0;
+        inflationFlash = Math.max(0, inflationFlash - 0.05);
+    }
+}
+
+// ============================================================
+//  星系检测（内生）
+//
+//  通过密度涨落连通区域检测星系
+//  动态阈值：均值 + 1.5σ（自适应）
+// ============================================================
+function detectGalaxies() {
+    if (tick < 80 || tick % 10 !== 0) return;
+    const n = gridN;
+    const N = n * n;
+    galaxies = [];
+    const visited = new Uint8Array(N);
+
+    // 动态阈值：最大值的 45%（适配指数衰减型密度分布）
+    let fieldMax = -Infinity;
+    for (let i = 0; i < N; i++) if (psi[i] > fieldMax) fieldMax = psi[i];
+    const galaxyThreshold = Math.max(1.2, fieldMax * 0.45);
+
+    for (let y = 0; y < n; y++) {
+        for (let x = 0; x < n; x++) {
+            const i = y * n + x;
+            if (visited[i] || psi[i] < galaxyThreshold) continue;
+
+            // BFS 找连通高密度区
+            const queue = [i];
+            visited[i] = 1;
+            let sumX = 0, sumY = 0, count = 0, maxV = 0, sumV = 0;
+
+            while (queue.length > 0) {
+                const ci = queue.pop();
+                const cx = ci % n, cy = (ci / n) | 0;
+                const v = psi[ci];
+                sumX += cx; sumY += cy; count++; sumV += v;
+                if (v > maxV) maxV = v;
+
+                for (let d = 0; d < 4; d++) {
+                    const nx2 = [cx + 1, cx - 1, cx, cx][d];
+                    const ny2 = [cy, cy, cy + 1, cy - 1][d];
+                    const ni = idx(nx2, ny2, n);
+                    if (!visited[ni] && psi[ni] >= galaxyThreshold) {
+                        visited[ni] = 1;
+                        queue.push(ni);
+                    }
+                }
+            }
+
+            if (count > 3) {
+                const gx = sumX / count, gy = sumY / count;
+                const r = Math.sqrt(count / Math.PI);
+                const newGalaxy = {
+                    x: gx, y: gy, r: r,
+                    density: maxV,
+                    stars: Math.floor(sumV),
+                    age: cosmicAge
+                };
+                galaxies.push(newGalaxy);
+
+                // 首次发现星系（防止重复日志）
+                if (galaxies.length === 1 && !galaxyFirstLogged) {
+                    addEvent(tick, '🌌 首个星系结构形成！密度涨落放大为大尺度结构', true);
+                    galaxyFirstLogged = true;
+                }
+            }
+        }
+    }
+
+    // 保留最大的星系
+    if (galaxies.length > 30) {
+        galaxies.sort((a, b) => b.stars - a.stars);
+        galaxies = galaxies.slice(0, 30);
+    }
+}
+
+// ============================================================
+//  生命与文明检测（内生）
+//
+//  生命条件：星系边缘温和区（密度 0.2~1.5），局部稳定
+//  文明条件：生命复杂度 > 0.4，信息处理网络自组织
+//  文明等级：随宇宙年龄增长（内生技术进步）
+// ============================================================
+function detectLifeAndCivilization() {
+    if (tick < 120 || tick % 15 !== 0) return;
+    const n = gridN;
+    lifeOrigins = [];
+    civilizations = [];
+
+    for (let gi = 0; gi < galaxies.length; gi++) {
+        const g = galaxies[gi];
+        // 在星系外围温和区搜索（0.8~2.0 星系半径 — 指数衰减密度梯度中的宜居带）
+        for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+            for (let ring = 1; ring <= 3; ring++) {
+                const dist = g.r * (0.8 + ring * 0.4);
+                const lifeX = Math.floor(g.x + Math.cos(angle) * dist);
+                const lifeY = Math.floor(g.y + Math.sin(angle) * dist);
+                const li = idx(lifeX, lifeY, n);
+
+                // 温和区：密度在适宜区间（指数衰减分布的自然产物）
+                if (psi[li] > 0.12 && psi[li] < 2.0) {
+                    const age = cosmicAge - 15;
+                    if (age > 0) {
+                        // 生命复杂度随时间增长（内生演化，快速版）
+                        const complexity = Math.min(1.0, age / 40);
+
+                        // 首次发现生命（防止重复日志）
+                        if (lifeOrigins.length === 0 && complexity > 0.02 && !lifeFirstLogged) {
+                            addEvent(tick, '🧬 生命起源！自复制信息结构在温和区涌现', true);
+                            lifeFirstLogged = true;
+                        }
+
+                        lifeOrigins.push({
+                            x: lifeX, y: lifeY,
+                            complexity: complexity,
+                            galaxy: gi
+                        });
+
+                        // 文明涌现：复杂度 > 0.3
+                        if (complexity > 0.3) {
+                            const techLevel = Math.min(1.0, (complexity - 0.3) / 0.7);
+                            const tech = Math.min(5, Math.floor(techLevel * 5) + 1);
+
+                            // 首次文明诞生（防止重复日志）
+                            if (civilizations.length === 0 && !civFirstLogged) {
+                                addEvent(tick, '📡 文明诞生！信息处理网络自组织，元认知回路闭合', true);
+                                civFirstLogged = true;
+                            }
+
+                            civilizations.push({
+                                x: lifeX, y: lifeY,
+                                level: techLevel,
+                                tech: tech,
+                                galaxy: gi
+                            });
+                        }
+                    }
+                    break; // 每个角度只取最近的一个生命点
+                }
+            }
+        }
+    }
+
+    // 限制数量
+    if (lifeOrigins.length > 30) lifeOrigins = lifeOrigins.slice(0, 30);
+    if (civilizations.length > 20) civilizations = civilizations.slice(0, 20);
 }
 
 // ---- 统计 ----
@@ -613,50 +1014,34 @@ function computeStats() {
         if (v < min) min = v;
         info += Math.abs(v);
     }
-    // 简化聚类数：统计高于阈值的连通区域近似
-    const threshold = (max + min) / 2 + (max - min) * 0.15;
+    // 快速密度峰计数（局部最大值）
+    const threshold = (max + min) / 2;
     let clusters = 0;
-    const visited = new Uint8Array(N);
-    for (let y = 0; y < n; y++) {
-        for (let x = 0; x < n; x++) {
+    for (let y = 1; y < n - 1; y++) {
+        for (let x = 1; x < n - 1; x++) {
             const i = y * n + x;
-            if (visited[i] || psi[i] < threshold) continue;
-            // BFS flood fill
-            const queue = [i];
-            visited[i] = 1;
-            let count = 0;
-            while (queue.length > 0) {
-                const ci = queue.pop();
-                const cx = ci % n, cy = (ci / n) | 0;
-                count++;
-                const neighbors = [
-                    idx(cx+1,cy,n), idx(cx-1,cy,n),
-                    idx(cx,cy+1,n), idx(cx,cy-1,n)
-                ];
-                for (const ni of neighbors) {
-                    if (!visited[ni] && psi[ni] >= threshold) {
-                        visited[ni] = 1;
-                        queue.push(ni);
-                    }
-                }
+            const v = psi[i];
+            if (v > threshold &&
+                v >= psi[idx(x + 1, y, n)] &&
+                v >= psi[idx(x - 1, y, n)] &&
+                v >= psi[idx(x, y + 1, n)] &&
+                v >= psi[idx(x, y - 1, n)]) {
+                clusters++;
             }
-            if (count > 4) clusters++;
         }
     }
-    // 关联度使用内生计算结果 endoAvgC
     return { max, min, info, clusters, corr: endoAvgC };
 }
 
 // ============================================================
-//  Canvas 渲染
+//  Canvas 渲染（ImageData 优化版）
 // ============================================================
 const canvas = document.getElementById('universe-canvas');
 const ctx = canvas.getContext('2d');
 
 function render() {
     const n = gridN;
-    const cw = canvas.width, ch = canvas.height;
-    const cellW = cw / n, cellH = ch / n;
+    const data = imageDataCache.data;
 
     let max = -Infinity, min = Infinity;
     for (let i = 0; i < n * n; i++) {
@@ -665,18 +1050,101 @@ function render() {
     }
     const range = max - min || 1;
 
-    for (let y = 0; y < n; y++) {
-        for (let x = 0; x < n; x++) {
-            const v = psi[y * n + x];
-            const t = (v - min) / range;  // 0..1
-            ctx.fillStyle = heatColor(t);
-            ctx.fillRect(x * cellW, y * cellH, cellW + 1, cellH + 1);
+    // 直接像素写入（比 fillRect 快 100x）
+    for (let i = 0; i < n * n; i++) {
+        const v = psi[i];
+        const t = (v - min) / range;
+        const rgb = heatColorRGB(t);
+        const pi = i * 4;
+        data[pi]     = rgb[0];
+        data[pi + 1] = rgb[1];
+        data[pi + 2] = rgb[2];
+        data[pi + 3] = 255;
+    }
+    ctx.putImageData(imageDataCache, 0, 0);
+
+    const cellW = canvas.width / n;
+    const cellH = canvas.height / n;
+
+    // 暴胀闪光
+    if (inflationFlash > 0.01) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${inflationFlash * 0.4})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // 星系光晕
+    for (const g of galaxies) {
+        const cx = g.x * cellW, cy = g.y * cellH;
+        const r = Math.max(2, g.r * cellW);
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 3);
+        grad.addColorStop(0, 'rgba(255,220,100,0.5)');
+        grad.addColorStop(0.3, 'rgba(255,150,50,0.25)');
+        grad.addColorStop(0.7, 'rgba(200,50,50,0.1)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - r * 3, cy - r * 3, r * 6, r * 6);
+        // 星系核心
+        ctx.fillStyle = 'rgba(255,255,200,0.95)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, Math.max(1.5, r * 0.25), 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 生命起源点（绿色脉冲）
+    for (const life of lifeOrigins) {
+        const cx = life.x * cellW, cy = life.y * cellH;
+        const pulse = 0.5 + 0.5 * Math.sin(tick * 0.15);
+        const r = 3 + life.complexity * 6;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        grad.addColorStop(0, `rgba(0,255,100,${0.8 * pulse})`);
+        grad.addColorStop(0.5, `rgba(0,200,80,${0.3 * pulse})`);
+        grad.addColorStop(1, 'rgba(0,100,50,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    }
+
+    // 文明标记（蓝白色环 + 信号束）
+    for (const civ of civilizations) {
+        const cx = civ.x * cellW, cy = civ.y * cellH;
+        const r = 4 + civ.level * 8;
+
+        // 外环
+        ctx.strokeStyle = `rgba(100,200,255,${0.5 + civ.level * 0.4})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 内环（tech >= 2）
+        if (civ.tech >= 2) {
+            ctx.strokeStyle = `rgba(255,255,255,${0.3 + civ.level * 0.4})`;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
+            ctx.stroke();
         }
+
+        // 信号束（tech >= 3）
+        if (civ.tech >= 3) {
+            ctx.strokeStyle = `rgba(100,200,255,${0.2 + civ.level * 0.2})`;
+            ctx.lineWidth = 0.8;
+            for (let a = 0; a < 4; a++) {
+                const angle = (a * Math.PI / 2) + tick * 0.02;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(angle) * r * 2.5, cy + Math.sin(angle) * r * 2.5);
+                ctx.stroke();
+            }
+        }
+
+        // 中心点
+        ctx.fillStyle = 'rgba(150,220,255,0.9)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
     }
 }
 
-function heatColor(t) {
-    // 热图色谱：黑→深蓝→青→绿→黄→红→白
+function heatColorRGB(t) {
     t = Math.max(0, Math.min(1, t));
     let r, g, b;
     if (t < 0.15) {
@@ -698,7 +1166,7 @@ function heatColor(t) {
         const k = (t - 0.92) / 0.08;
         r = 255; g = k * 200; b = k * 200;
     }
-    return `rgb(${r|0},${g|0},${b|0})`;
+    return [r | 0, g | 0, b | 0];
 }
 
 // ============================================================
@@ -706,28 +1174,40 @@ function heatColor(t) {
 // ============================================================
 function updateUI() {
     const s = computeStats();
-    // 统计
     document.getElementById('s-tick').textContent = tick;
     document.getElementById('s-max').textContent = s.max.toFixed(4);
     document.getElementById('s-min').textContent = s.min.toFixed(4);
     document.getElementById('s-info').textContent = s.info.toFixed(0);
     document.getElementById('s-clusters').textContent = s.clusters;
     document.getElementById('s-corr').textContent = s.corr.toFixed(3);
-    // overlay
-    document.getElementById('overlay').textContent = `tick: ${tick}  ⟨C⟩: ${s.corr.toFixed(3)}`;
-    // 阶段
+
+    // 当前阶段
     let phaseIdx = 0;
     for (let i = PHASES.length - 1; i >= 0; i--) {
         if (tick >= PHASES[i].threshold) { phaseIdx = i; break; }
     }
-    document.getElementById('phase-name').textContent = PHASES[phaseIdx].name;
-    document.getElementById('phase-desc').textContent = PHASES[phaseIdx].desc;
-    // timeline
+    const phase = PHASES[phaseIdx];
+    document.getElementById('phase-name').textContent = phase.name;
+    let phaseDesc = phase.desc;
+    if (inflationFactor > 1.01) {
+        phaseDesc = '⚡ ' + phaseDesc + ` (暴胀因子: ${inflationFactor.toFixed(2)})`;
+    }
+    document.getElementById('phase-desc').textContent = phaseDesc;
+
+    // 章节标签
+    document.getElementById('chapter-label').textContent = CHAPTERS[phase.chapter] || '';
+
+    // Overlay
+    document.getElementById('overlay').textContent =
+        `tick: ${tick}  ⟨C⟩: ${s.corr.toFixed(3)}  星系:${galaxies.length}  文明:${civilizations.length}`;
+
+    // Timeline
     document.querySelectorAll('.timeline-node').forEach((node, i) => {
         node.classList.remove('active', 'done');
         if (i < phaseIdx) node.classList.add('done');
         if (i === phaseIdx) node.classList.add('active');
     });
+
     // 浮点校验
     const noiseFloor = EPS_MACH * Math.abs(s.max);
     const margin = DELTA_PSI / (noiseFloor || 1e-30);
@@ -741,13 +1221,35 @@ function updateUI() {
     bar.style.background = passed ? 'var(--accent3)' : 'var(--warn)';
     status.textContent = passed ? '✓ 约束通过' : '✗ 噪声压倒物理涨落';
     status.className = 'check-status ' + (passed ? 'pass' : 'fail');
+
     // 内生相互作用参数
     const totalLinks = gridN * gridN * 4;
     document.getElementById('e-cth').textContent = endoCTh.toFixed(6);
     document.getElementById('e-dstar').textContent = endoDStar.toFixed(6);
+    document.getElementById('e-gstar').textContent = endoGStar.toFixed(6);
     document.getElementById('e-links').textContent = endoLinks;
     document.getElementById('e-ratio').textContent = (endoLinks / totalLinks * 100).toFixed(1) + '%';
-    document.getElementById('e-isolated').textContent = endoIsolated;
+    document.getElementById('e-grav-links').textContent = endoGravLinks;
+
+    // 宇宙结构涌现
+    document.getElementById('cs-inflation').textContent = inflationFactor.toFixed(2);
+    let inflStatus = '待触发';
+    if (inflationDone) inflStatus = '已完成';
+    else if (inflationTriggered) inflStatus = '暴胀中...';
+    document.getElementById('cs-inflation-status').textContent = inflStatus;
+    document.getElementById('cs-galaxies').textContent = galaxies.length;
+    const maxStars = galaxies.length > 0 ? Math.max(...galaxies.map(g => g.stars)) : 0;
+    document.getElementById('cs-stars').textContent = maxStars;
+    document.getElementById('cs-life').textContent = lifeOrigins.length;
+    document.getElementById('cs-civ').textContent = civilizations.length;
+    const maxTech = civilizations.length > 0 ? Math.max(...civilizations.map(c => c.tech)) : 0;
+    document.getElementById('cs-tech').textContent = maxTech;
+
+    // 事件日志
+    const logEl = document.getElementById('event-log');
+    logEl.innerHTML = events.slice(-15).reverse().map(e =>
+        `<div class="event${e.critical ? ' critical' : ''}"><span class="time">[t=${e.time}]</span> <span class="text">${e.text}</span></div>`
+    ).join('');
 }
 
 function updateConstants() {
@@ -787,6 +1289,40 @@ document.getElementById('btn-step').addEventListener('click', () => {
     updateUI();
 });
 
+document.getElementById('btn-fast').addEventListener('click', () => {
+    // 快进 2000 步
+    for (let i = 0; i < 2000; i++) evolveStep();
+    render();
+    updateUI();
+});
+
+document.getElementById('btn-skip').addEventListener('click', () => {
+    // 直达文明：分批运行直到文明出现或达到 5000 步
+    const btn = document.getElementById('btn-skip');
+    btn.textContent = '运行中...';
+    btn.disabled = true;
+    running = false;
+    document.getElementById('btn-play').textContent = '▶ 演化';
+    if (rafId) cancelAnimationFrame(rafId);
+
+    const skipLoop = () => {
+        for (let i = 0; i < 200; i++) evolveStep();
+        render();
+        updateUI();
+        if (civilizations.length === 0 && tick < 5000) {
+            setTimeout(skipLoop, 10);
+        } else {
+            btn.textContent = '直达文明';
+            btn.disabled = false;
+            if (civilizations.length > 0) {
+                addEvent(tick, `直达文明成功！共 ${civilizations.length} 个文明，最高等级 ${Math.max(...civilizations.map(c=>c.tech))}`, true);
+                updateUI();
+            }
+        }
+    };
+    skipLoop();
+});
+
 document.getElementById('btn-reset').addEventListener('click', () => {
     running = false;
     const btn = document.getElementById('btn-play');
@@ -813,8 +1349,6 @@ document.getElementById('grid-size').addEventListener('change', (e) => {
     document.getElementById('btn-play').textContent = '▶ 演化';
     if (rafId) cancelAnimationFrame(rafId);
     initGrid(n);
-    canvas.width = n;
-    canvas.height = n;
     render();
     updateUI();
 });
@@ -837,11 +1371,16 @@ document.getElementById('grid-size').addEventListener('change', (e) => {
 //  启动
 // ============================================================
 initGrid(gridN);
-canvas.width = gridN;
-canvas.height = gridN;
 updateConstants();
 render();
 updateUI();
+
+// 自动开始演化
+setTimeout(() => {
+    running = true;
+    document.getElementById('btn-play').textContent = '⏸ 暂停';
+    loop();
+}, 300);
 </script>
 </body>
 </html>
