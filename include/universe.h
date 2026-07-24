@@ -1,5 +1,5 @@
 /*
- * universe.h - 信息场演化引擎核心接口
+ * universe.h - 信息场演化引擎核心接口（内生相互作用版）
  *
  * 连续信息场 Ψ(ℳ) 在带分辨截断的网格上离散演化。
  *
@@ -8,11 +8,12 @@
  *   - 分辨阈值：场变化 |ΔΨ| < δΨ 视为不可区分，被截断归零
  *   - 守恒律：全域信息测度守恒（A2）
  *
- * 演化方程（信息场拉普拉斯扩散 + 非线性自耦合）：
- *   Ψ(t+Δt) = Ψ(t) + Δt · [ D*·∇²Ψ - V'(Ψ) ]
- *
- *   D* : 信息扩散系数（退相干率，< 0.5 保证 CFL 稳定）
- *   V'(Ψ) : 自耦合势能梯度，模拟信息关联密度对拓扑的反馈
+ * 内生演化原理（无外部 D、g 参数）：
+ *   1. 计算相邻单元对的关联函数 C[ρi,ρj] 和迹距离 D(ρi,ρj)
+ *   2. 动态阈值 C_th = <C>（全局平均关联度，由系统状态涌现）
+ *   3. 仅 C > C_th 的链接为活跃链接，参与信息流动
+ *   4. 涌现扩散系数 D* = <C>（不再是外部参数）
+ *   5. 非线性反馈内嵌于关联函数：高密度→低关联→链接断开→孤立（引力效应）
  */
 #ifndef UNIVERSE_H
 #define UNIVERSE_H
@@ -28,14 +29,23 @@ typedef struct {
     field_t dt;                  /* 时序步长（= t*_P）      */
     field_t c_star;              /* 因果上限               */
     field_t delta_psi;           /* 信息分辨阈值 δΨ        */
-    field_t diff_coef;           /* 信息扩散系数 D*        */
-    field_t coupling;            /* 自耦合强度             */
+    /* 注意：diff_coef 和 coupling 已移除，相互作用完全内生 */
 } universe_config_t;
+
+/* 内生相互作用参数（由系统状态涌现）*/
+typedef struct {
+    field_t c_th;        /* 动态相变阈值 = <C>          */
+    field_t d_star;      /* 涌现扩散系数 = <C>         */
+    long    active_links; /* 活跃链接数               */
+    long    isolated;    /* 孤立单元数                 */
+    field_t avg_c;       /* 全局平均关联度             */
+} endogenous_t;
 
 /* 演化引擎状态 */
 typedef struct {
     universe_config_t cfg;
     universe_constants_t consts;
+    endogenous_t endo;           /* 内生相互作用参数       */
     field_t *psi;                /* 当前场 Ψ(t)            */
     field_t *psi_next;           /* 下一时刻场 Ψ(t+Δt)     */
     long    tick;                /* 内部时钟（演化步数）    */
@@ -58,7 +68,6 @@ void universe_destroy(universe_t *u);
 
 /*
  * 初始化场：随机高斯涨落种子（模拟原始连续相位场）。
- * 幅值范围 [-amplitude, amplitude]。
  */
 void universe_seed_random(universe_t *u, field_t amplitude, unsigned int seed);
 
@@ -68,12 +77,13 @@ void universe_seed_random(universe_t *u, field_t amplitude, unsigned int seed);
 void universe_inject(universe_t *u, int x, int y, int z, field_t value);
 
 /*
- * 执行 n 步演化。
+ * 执行 n 步内生演化。
  * 每步：
- *   1. 拉普拉斯扩散（因果传播，c*=1 限制单步 1 网格）
- *   2. 非线性自耦合（信息密度反馈）
- *   3. 分辨阈值截断（|ΔΨ| < δΨ → 归零）
- *   4. 全域守恒修正
+ *   1. 计算所有相邻单元对的关联函数 C 和迹距离 D
+ *   2. 动态阈值 C_th = <C>（内生涌现）
+ *   3. 关联加权信息流动（仅活跃链接参与）
+ *   4. 分辨阈值截断（|ΔΨ| < δΨ → 归零）
+ *   5. 全域守恒修正
  * 返回实际完成的步数。
  */
 int universe_evolve(universe_t *u, int n_steps);

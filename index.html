@@ -299,16 +299,7 @@ body {
                 <input type="range" id="grid-size" min="64" max="256" step="32" value="128">
                 <span class="val" id="grid-val">128</span>
             </div>
-            <div class="slider-group">
-                扩散 D*
-                <input type="range" id="diff" min="1" max="40" value="12">
-                <span class="val" id="diff-val">0.12</span>
-            </div>
-            <div class="slider-group">
-                耦合 g
-                <input type="range" id="coupling" min="0" max="50" value="30">
-                <span class="val" id="coupling-val">0.30</span>
-            </div>
+            <span style="color:var(--text-dim);font-size:11px;">D*、g 已移除 — 相互作用完全内生</span>
         </div>
     </div>
 
@@ -368,6 +359,34 @@ body {
             <div class="check-status pass" id="f-status">✓ 约束通过</div>
         </div>
 
+        <!-- Endogenous Interaction -->
+        <div class="card">
+            <h3>内生相互作用参数</h3>
+            <div class="stat-row">
+                <span class="stat-label">C_th (动态相变阈值)</span>
+                <span class="stat-value" id="e-cth">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">D* (涌现扩散系数 = ⟨C⟩)</span>
+                <span class="stat-value" id="e-dstar">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">活跃链接数</span>
+                <span class="stat-value" id="e-links">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">链接活跃率</span>
+                <span class="stat-value" id="e-ratio">--</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">孤立单元数</span>
+                <span class="stat-value" id="e-isolated">--</span>
+            </div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:6px;">
+                D*、耦合强度均由关联函数 C[ρi,ρj] 内生涌现，无外部参数
+            </div>
+        </div>
+
         <!-- Stats -->
         <div class="card">
             <h3>实时统计</h3>
@@ -422,15 +441,34 @@ const PHASES = [
 ];
 
 // ---- 引擎状态 ----
-let gridN = 128;        // 网格规模
-let psi = null;          // 当前场
-let psiNext = null;      // 下一时刻场
+let gridN = 128;
+let psi = null;
+let psiNext = null;
 let tick = 0;
 let running = false;
 let speed = 5;
-let diffCoef = 0.12;
-let coupling = 0.30;
 let rafId = null;
+
+// 内生参数（由系统状态涌现，非外部输入）
+let endoCTh = 1.0;       // 动态相变阈值 C_th = ⟨C⟩
+let endoDStar = 1.0;     // 涌现扩散系数 D* = ⟨C⟩
+let endoLinks = 0;       // 活跃链接数
+let endoIsolated = 0;    // 孤立单元数
+let endoAvgC = 1.0;      // 全局平均关联度
+
+// ---- 原生信息函数定义（无几何依赖）----
+// 迹距离 D(ρ_i, ρ_j): 衡量两组态可区分程度，取值 [0,1]
+function traceDistance(a, b) {
+    const diff = Math.abs(a - b);
+    const norm = Math.abs(a) + Math.abs(b) + DELTA_PSI;
+    return Math.min(1, diff / norm);
+}
+
+// 关联函数 C[ρ_i, ρ_j]: 衡量相位联动强度，取值 [0,1]
+// C = 1 - D（关联度 = 迹距离的补）
+function correlation(a, b) {
+    return 1 - traceDistance(a, b);
+}
 
 // ---- 初始化 ----
 function initGrid(n) {
@@ -459,52 +497,117 @@ function idx(x, y, n) {
     return y * n + x;
 }
 
-// ---- 演化一步 ----
+// ---- 内生演化一步 ----
+// 核心原理：
+//   1. 计算所有相邻单元对的关联函数 C[ρi,ρj] 和迹距离 D(ρi,ρj)
+//   2. 动态阈值 C_th = ⟨C⟩（全局平均关联度，由系统状态涌现）
+//   3. 仅 C > C_th 的链接为活跃链接，参与信息流动
+//   4. 涌现扩散系数 D* = ⟨C⟩（不再是外部参数）
+//   5. 非线性反馈内嵌于关联函数：高密度→低关联→链接断开→孤立（引力效应）
+//   6. 无外部 D、g 参数，无预设势函数
 function evolveStep() {
     const n = gridN;
-    // CFL 稳定性：2D 五点拉普拉斯要求 D < 0.25
-    const D = Math.min(diffCoef, 0.24);
-    const g = coupling;
     const dpsi = DELTA_PSI;
-    let sumBefore = 0;
-    for (let i = 0; i < n * n; i++) sumBefore += psi[i];
+    const N = n * n;
+    const totalLinks = N * 4;
 
+    // 守恒基准
+    let sumBefore = 0;
+    for (let i = 0; i < N; i++) sumBefore += psi[i];
+
+    // 预计算4邻居索引
+    const nIdx = new Int32Array(N * 4);
     for (let y = 0; y < n; y++) {
         for (let x = 0; x < n; x++) {
             const i = y * n + x;
-            const cur = psi[i];
-            // 五点拉普拉斯（因果传播：c*=1 限制单步1网格）
-            const lap = psi[idx(x+1,y,n)] + psi[idx(x-1,y,n)] +
-                        psi[idx(x,y+1,n)] + psi[idx(x,y-1,n)] -
-                        4 * cur;
-            let delta = D * lap;
-            // 非线性自耦合：V'(Psi) = -g * Psi * (Psi^2 - 1) / 2
-            delta -= g * cur * (cur * cur - 1) * 0.5;
-            let next = cur + delta;
-            // 分辨阈值截断
-            if (Math.abs(next - cur) < dpsi) next = cur;
-            // 防止数值发散：限幅
-            next = Math.max(-10, Math.min(10, next));
-            psiNext[i] = next;
+            nIdx[i*4]   = idx(x+1, y, n);
+            nIdx[i*4+1] = idx(x-1, y, n);
+            nIdx[i*4+2] = idx(x, y+1, n);
+            nIdx[i*4+3] = idx(x, y-1, n);
         }
     }
+
+    // Pass 1: 计算所有关联 C[i,j]，求和得到 ⟨C⟩
+    const cArr = new Float64Array(N * 4);
+    let sumC = 0;
+    for (let i = 0; i < N; i++) {
+        for (let d = 0; d < 4; d++) {
+            const j = nIdx[i*4 + d];
+            const c = correlation(psi[i], psi[j]);
+            cArr[i*4 + d] = c;
+            sumC += c;
+        }
+    }
+    const avgC = sumC / totalLinks;
+    // 动态相变阈值 C_th = ⟨C⟩（内生涌现）
+    const cTh = avgC;
+    // 涌现扩散系数 D* = ⟨C⟩（不再是滑块参数）
+    const dStar = avgC;
+
+    // Pass 2: 基于活跃链接的关联加权演化
+    let activeLinks = 0;
+    let isolated = 0;
+    for (let i = 0; i < N; i++) {
+        const cur = psi[i];
+        let weightedDiff = 0;
+        let weightSum = 0;
+        let linkCount = 0;
+        for (let d = 0; d < 4; d++) {
+            const j = nIdx[i*4 + d];
+            const c = cArr[i*4 + d];
+            // 仅关联度高于阈值的链接为活跃链接
+            if (c > cTh) {
+                weightedDiff += c * (psi[j] - cur);
+                weightSum += c;
+                linkCount++;
+                activeLinks++;
+            }
+        }
+
+        let delta = 0;
+        if (weightSum > 0) {
+            // 涌现扩散：D* · Σ C_ij·(ψj - ψi) / Σ C_ij
+            // 非线性反馈已内嵌：高密度→低C→链接断开→无扩散（引力效应）
+            delta = dStar * weightedDiff / weightSum;
+        } else {
+            // 无活跃链接 → 单元孤立 → 不演化（信息拓扑封闭）
+            isolated++;
+        }
+
+        let next = cur + delta;
+        // 分辨阈值截断（A4）
+        if (Math.abs(next - cur) < dpsi) next = cur;
+        // 限幅防发散
+        next = Math.max(-10, Math.min(10, next));
+        psiNext[i] = next;
+    }
+
     // 交换缓冲区
     const tmp = psi; psi = psiNext; psiNext = tmp;
-    // 全域守恒修正（A2）：校正均值漂移，保持总信息测度
+
+    // 全域守恒修正（A2）：均值漂移校正
     let sumAfter = 0;
-    for (let i = 0; i < n * n; i++) sumAfter += psi[i];
-    const drift = (sumBefore - sumAfter) / (n * n);
+    for (let i = 0; i < N; i++) sumAfter += psi[i];
+    const drift = (sumBefore - sumAfter) / N;
     if (Math.abs(drift) > 1e-15) {
-        for (let i = 0; i < n * n; i++) psi[i] += drift;
+        for (let i = 0; i < N; i++) psi[i] += drift;
     }
+
+    // 更新内生参数
+    endoCTh = cTh;
+    endoDStar = dStar;
+    endoLinks = activeLinks;
+    endoIsolated = isolated;
+    endoAvgC = avgC;
     tick++;
 }
 
 // ---- 统计 ----
 function computeStats() {
     const n = gridN;
+    const N = n * n;
     let max = -Infinity, min = Infinity, info = 0;
-    for (let i = 0; i < n * n; i++) {
+    for (let i = 0; i < N; i++) {
         const v = psi[i];
         if (v > max) max = v;
         if (v < min) min = v;
@@ -513,7 +616,7 @@ function computeStats() {
     // 简化聚类数：统计高于阈值的连通区域近似
     const threshold = (max + min) / 2 + (max - min) * 0.15;
     let clusters = 0;
-    const visited = new Uint8Array(n * n);
+    const visited = new Uint8Array(N);
     for (let y = 0; y < n; y++) {
         for (let x = 0; x < n; x++) {
             const i = y * n + x;
@@ -540,9 +643,8 @@ function computeStats() {
             if (count > 4) clusters++;
         }
     }
-    // 全局关联度（简化：随 tick 退相干下降）
-    const corr = Math.max(0, 1 - tick * 0.0005);
-    return { max, min, info, clusters, corr };
+    // 关联度使用内生计算结果 endoAvgC
+    return { max, min, info, clusters, corr: endoAvgC };
 }
 
 // ============================================================
@@ -639,6 +741,13 @@ function updateUI() {
     bar.style.background = passed ? 'var(--accent3)' : 'var(--warn)';
     status.textContent = passed ? '✓ 约束通过' : '✗ 噪声压倒物理涨落';
     status.className = 'check-status ' + (passed ? 'pass' : 'fail');
+    // 内生相互作用参数
+    const totalLinks = gridN * gridN * 4;
+    document.getElementById('e-cth').textContent = endoCTh.toFixed(6);
+    document.getElementById('e-dstar').textContent = endoDStar.toFixed(6);
+    document.getElementById('e-links').textContent = endoLinks;
+    document.getElementById('e-ratio').textContent = (endoLinks / totalLinks * 100).toFixed(1) + '%';
+    document.getElementById('e-isolated').textContent = endoIsolated;
 }
 
 function updateConstants() {
@@ -708,16 +817,6 @@ document.getElementById('grid-size').addEventListener('change', (e) => {
     canvas.height = n;
     render();
     updateUI();
-});
-
-document.getElementById('diff').addEventListener('input', (e) => {
-    diffCoef = parseInt(e.target.value) / 100;
-    document.getElementById('diff-val').textContent = diffCoef.toFixed(2);
-});
-
-document.getElementById('coupling').addEventListener('input', (e) => {
-    coupling = parseInt(e.target.value) / 100;
-    document.getElementById('coupling-val').textContent = coupling.toFixed(2);
 });
 
 // ============================================================
