@@ -547,20 +547,20 @@ body {
                 </div>
             </div>
 
-            <!-- 扰动器面板 -->
+            <!-- 天体物理实验面板 -->
             <div id="lab-panel-injector" class="lab-panel" style="display:none">
                 <div class="tool-grid">
-                    <div class="tool-btn" data-tool="pulse" id="tool-pulse">
-                        <span class="tool-icon">✦</span>信息脉冲
+                    <div class="tool-btn" data-tool="blackhole" id="tool-blackhole">
+                        <span class="tool-icon">⬤</span>黑洞
                     </div>
-                    <div class="tool-btn" data-tool="void" id="tool-void">
-                        <span class="tool-icon">○</span>真空洞
+                    <div class="tool-btn" data-tool="galaxy" id="tool-galaxy">
+                        <span class="tool-icon">◉</span>星系注入
                     </div>
-                    <div class="tool-btn" data-tool="seed" id="tool-seed">
-                        <span class="tool-icon">★</span>密度种子
+                    <div class="tool-btn" data-tool="teleport" id="tool-teleport">
+                        <span class="tool-icon">⇌</span>空间瞬移
                     </div>
-                    <div class="tool-btn" data-tool="wall" id="tool-wall">
-                        <span class="tool-icon">▌</span>信息墙
+                    <div class="tool-btn" data-tool="light" id="tool-light">
+                        <span class="tool-icon">→</span>光速飞行
                     </div>
                 </div>
                 <div class="tool-param">
@@ -573,15 +573,16 @@ body {
                     <input type="range" id="inject-radius" min="1" max="15" step="1" value="3">
                     <span class="pval" id="inject-radius-val">3</span>
                 </div>
-                <div class="lab-hint">
-                    在宇宙中注入扰动，观察信息场的响应。<br>
-                    • 脉冲：注入信息能量<br>
-                    • 真空：抽空局部信息<br>
-                    • 种子：创造高密度核<br>
-                    • 墙：制造信息屏障
+                <div class="lab-hint" id="tool-hint">
+                    选择实验工具，点击宇宙执行实验。<br>
+                    • <b>黑洞</b>：创造引力奇点，吞噬周围信息<br>
+                    • <b>星系注入</b>：放置一个密度峰星系<br>
+                    • <b>空间瞬移</b>：点击两点，信息场跳跃<br>
+                    • <b>光速飞行</b>：发射信息脉冲，测传播速度
                 </div>
-                <div style="margin-top:8px">
-                    <button class="btn" id="btn-clear-inject" style="font-size:11px;padding:5px 12px">清除所有扰动</button>
+                <div style="margin-top:8px;display:flex;gap:4px">
+                    <button class="btn" id="btn-clear-inject" style="font-size:11px;padding:5px 12px">清除实验</button>
+                    <button class="btn" id="btn-experiment-info" style="font-size:11px;padding:5px 12px;border-color:var(--accent2);color:var(--accent2)">实验记录</button>
                 </div>
             </div>
 
@@ -811,6 +812,14 @@ let selectedProbeId = -1;
 let injectAmp = 3.0;
 let injectRadius = 3;
 
+// 天体物理实验状态
+let blackHoles = [];             // 黑洞列表 [{id, x, y, mass, active, swallowCount}]
+let blackHoleIdCounter = 0;
+let lightBeams = [];             // 光速飞行光束 [{id, x, y, vx, vy, age, history:[{t,x,y}], alive, speed}]
+let lightBeamIdCounter = 0;
+let teleportFirstPoint = null;   // 空间瞬移第一点 {x, y}
+let experimentLog = [];          // 实验记录 [{t, type, desc, data}]
+
 // 全局历史数据（图表用）
 let globalHistory = {
     corr: [],       // ⟨C⟩ 时间序列
@@ -903,6 +912,12 @@ function initGrid(n) {
     probes = [];
     probeIdCounter = 0;
     selectedProbeId = -1;
+    blackHoles = [];
+    blackHoleIdCounter = 0;
+    lightBeams = [];
+    lightBeamIdCounter = 0;
+    teleportFirstPoint = null;
+    experimentLog = [];
     globalHistory = { corr: [], dmax: [], dmin: [], galaxies: [], life: [], civ: [] };
     events = [];
     addEvent(0, '宇宙初始化，原始相位场涨落');
@@ -1072,6 +1087,10 @@ function evolveStep() {
     // ===== 物理实验台：数据采集 =====
     recordGlobalHistory();
     recordProbeData();
+
+    // 天体物理实验演化
+    evolveBlackHoles();
+    evolveLightBeams();
 }
 
 // ============================================================
@@ -1149,40 +1168,290 @@ function measureProbe(x, y) {
 }
 
 // ============================================================
-//  物理实验台：注入扰动
+//  物理实验台：天体物理实验
 // ============================================================
-function injectPerturbation(cx, cy, type, amp, radius) {
+
+// ============================================================
+//  黑洞实验：创造引力奇点
+//
+//  黑洞持续吸积周围信息场，在中心形成奇点
+//  事件视界半径 = schwarzschild_r ∝ mass
+//  吸积率 ∝ 1/r²（牛顿近似）
+// ============================================================
+function createBlackHole(cx, cy, mass) {
+    const n = gridN;
+    const bh = {
+        id: blackHoleIdCounter++,
+        x: cx, y: cy,
+        mass: mass,
+        initMass: mass,
+        active: true,
+        swallowCount: 0,
+        age: 0,
+        // 事件视界半径（信息论 Schwarzschild 半径）
+        eventHorizon: Math.max(2, Math.sqrt(mass) * 1.5),
+        // 吸积盘半径
+        accretionR: Math.max(4, Math.sqrt(mass) * 4),
+        history: []
+    };
+    blackHoles.push(bh);
+
+    // 初始效果：抽空事件视界内的信息（信息被吞噬）
+    const r = Math.ceil(bh.eventHorizon);
+    for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > r) continue;
+            const x = ((cx + dx) % n + n) % n;
+            const y = ((cy + dy) % n + n) % n;
+            const i = y * n + x;
+            if (dist < bh.eventHorizon * 0.5) {
+                // 奇点：极高密度
+                psi[i] = Math.max(psi[i], mass * 2);
+            } else {
+                // 事件视界：信息被拉向中心
+                psi[i] = Math.max(psi[i], mass * (1 - dist / r));
+            }
+        }
+    }
+
+    experimentLog.push({
+        t: tick, type: 'blackhole',
+        desc: `黑洞 #${bh.id} 创建于 (${cx},${cy}) 质量=${mass.toFixed(1)} 视界r=${bh.eventHorizon.toFixed(1)}`,
+        data: { id: bh.id, x: cx, y: cy, mass: mass }
+    });
+    return bh;
+}
+
+// 黑洞每步演化：持续吸积
+function evolveBlackHoles() {
+    const n = gridN;
+    for (const bh of blackHoles) {
+        if (!bh.active) continue;
+        bh.age++;
+        bh.history.push({ t: tick, mass: bh.mass });
+        if (bh.history.length > HISTORY_MAX) bh.history.shift();
+
+        // 吸积：从周围区域汲取信息
+        const accR = Math.ceil(bh.accretionR);
+        let swallowed = 0;
+        for (let dy = -accR; dy <= accR; dy++) {
+            for (let dx = -accR; dx <= accR; dx++) {
+                const dist2 = dx * dx + dy * dy;
+                if (dist2 > accR * accR) continue;
+                const dist = Math.sqrt(dist2);
+                if (dist < 0.5) continue;
+                const x = ((bh.x + dx) % n + n) % n;
+                const y = ((bh.y + dy) % n + n) % n;
+                const i = y * n + x;
+
+                // 吸积率：1/r² × 质量 × 系数
+                const accRate = bh.mass * 0.005 / (dist * dist);
+                const extracted = Math.min(psi[i], accRate);
+                psi[i] -= extracted;
+                swallowed += extracted;
+
+                // 事件视界内：信息完全吞噬
+                if (dist < bh.eventHorizon) {
+                    swallowed += psi[i];
+                    psi[i] = 0.01;  // 几乎真空，但量子涨落保持
+                }
+            }
+        }
+        bh.mass += swallowed * 0.1;  // 黑洞质量增长
+        bh.swallowCount += swallowed;
+        bh.eventHorizon = Math.max(2, Math.sqrt(bh.mass) * 1.5);
+        bh.accretionR = Math.max(4, Math.sqrt(bh.mass) * 4);
+
+        // 黑洞蒸发（Hawking 辐射模拟 — 质量越大蒸发越慢）
+        const hawkingRate = 0.0001 / (bh.mass * bh.mass + 0.1);
+        bh.mass -= hawkingRate;
+        if (bh.mass < 0.1) {
+            bh.active = false;
+            addEvent(tick, `🕳 黑洞 #${bh.id} 蒸发消失 (Hawking辐射)`, true);
+        }
+    }
+}
+
+// ============================================================
+//  星系碰撞实验：放置一个密度峰星系
+//
+//  创造一个类星系结构：中心高密度核 + 旋臂
+// ============================================================
+function injectGalaxy(cx, cy, mass, radius) {
     const n = gridN;
     const r2 = radius * radius;
-    let count = 0;
 
+    // 旋臂模式（对数螺旋）
     for (let dy = -radius; dy <= radius; dy++) {
         for (let dx = -radius; dx <= radius; dx++) {
             const dist2 = dx * dx + dy * dy;
             if (dist2 > r2) continue;
+            const dist = Math.sqrt(dist2);
+            const angle = Math.atan2(dy, dx);
+
+            // 旋臂密度调制（2条旋臂）
+            const armAngle = angle - Math.log(dist + 0.1) * 2;
+            const armMod = 0.5 + 0.5 * Math.cos(armAngle * 2);
+
+            // 中心高密度 + 旋臂结构
+            const profile = Math.exp(-dist / radius * 1.5);
+            const density = mass * profile * (0.3 + 0.7 * armMod);
+
             const x = ((cx + dx) % n + n) % n;
             const y = ((cy + dy) % n + n) % n;
             const i = y * n + x;
-            const dist = Math.sqrt(dist2);
-            const falloff = 1 - dist / radius;
-
-            if (type === 'pulse') {
-                // 信息脉冲：高斯注入
-                psi[i] += amp * falloff * falloff;
-            } else if (type === 'void') {
-                // 真空洞：抽空信息
-                psi[i] *= Math.max(0, 1 - amp * falloff * 0.5);
-            } else if (type === 'seed') {
-                // 密度种子：强制高密度
-                psi[i] = Math.max(psi[i], amp * falloff);
-            } else if (type === 'wall') {
-                // 信息墙：设为平均值
-                psi[i] = amp * falloff;
-            }
-            count++;
+            psi[i] = Math.max(psi[i], density);
         }
     }
-    return count;
+
+    experimentLog.push({
+        t: tick, type: 'galaxy',
+        desc: `星系注入 (${cx},${cy}) 质量=${mass.toFixed(1)} 半径=${radius}`,
+        data: { x: cx, y: cy, mass: mass, radius: radius }
+    });
+}
+
+// ============================================================
+//  空间瞬移实验：量子隧穿信息场
+//
+//  第一次点击：选择源点
+//  第二次点击：将源点周围的信息场"瞬移"到目标点
+// ============================================================
+function teleportField(x1, y1, x2, y2, radius) {
+    const n = gridN;
+    const r2 = radius * radius;
+
+    // 复制源区域
+    const field = [];
+    for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            const dist2 = dx * dx + dy * dy;
+            if (dist2 > r2) continue;
+            const sx = ((x1 + dx) % n + n) % n;
+            const sy = ((y1 + dy) % n + n) % n;
+            const tx = ((x2 + dx) % n + n) % n;
+            const ty = ((y2 + dy) % n + n) % n;
+            field.push({ sx, sy, tx, ty, dist: Math.sqrt(dist2) });
+        }
+    }
+
+    // 交换两个区域的信息场
+    let swapped = 0;
+    for (const f of field) {
+        const si = f.sy * n + f.sx;
+        const ti = f.ty * n + f.tx;
+        const falloff = 1 - f.dist / radius;
+        // 交换（带衰减 — 边缘渐变）
+        const tmp = psi[si];
+        psi[si] = psi[ti] * falloff + psi[si] * (1 - falloff);
+        psi[ti] = tmp * falloff + psi[ti] * (1 - falloff);
+        swapped++;
+    }
+
+    experimentLog.push({
+        t: tick, type: 'teleport',
+        desc: `空间瞬移 (${x1},${y1}) → (${x2},${y2}) 半径=${radius} 交换${swapped}单元`,
+        data: { x1, y1, x2, y2, radius, count: swapped }
+    });
+}
+
+// ============================================================
+//  光速飞行实验：发射信息脉冲
+//
+//  在指定方向发射一个信息脉冲，跟踪其传播
+//  脉冲以光速 c*=1 (Δx/Δt) 传播
+//  记录传播轨迹，测量信息传播速度
+// ============================================================
+function launchLightBeam(cx, cy, angle, amp) {
+    const beam = {
+        id: lightBeamIdCounter++,
+        x: cx, y: cy,
+        startX: cx, startY: cy,
+        vx: Math.cos(angle),
+        vy: Math.sin(angle),
+        age: 0,
+        amp: amp,
+        alive: true,
+        speed: 0,        // 测量速度
+        history: [],
+        // 光锥传播的扰动
+        trail: []
+    };
+    lightBeams.push(beam);
+
+    // 初始注入脉冲
+    const n = gridN;
+    psi[cy * n + cx] += amp;
+
+    experimentLog.push({
+        t: tick, type: 'light',
+        desc: `光速脉冲 #${beam.id} 发射 (${cx},${cy}) 角度=${(angle * 180 / Math.PI).toFixed(0)}° 强度=${amp}`,
+        data: { id: beam.id, x: cx, y: cy, angle: angle }
+    });
+    return beam;
+}
+
+// 光束每步演化：传播
+function evolveLightBeams() {
+    const n = gridN;
+    for (const beam of lightBeams) {
+        if (!beam.alive) continue;
+        beam.age++;
+        const prevX = beam.x, prevY = beam.y;
+
+        // 光速传播：每步移动 1 格 (= c* = Δx/Δt)
+        beam.x = ((beam.x + beam.vx) % n + n) % n;
+        beam.y = ((beam.y + beam.vy) % n + n) % n;
+
+        // 记录轨迹
+        beam.trail.push({ x: beam.x, y: beam.y, t: tick });
+        if (beam.trail.length > 100) beam.trail.shift();
+
+        // 沿路径注入信息扰动（光锥效应）
+        const xi = Math.floor(beam.x);
+        const yi = Math.floor(beam.y);
+        const i = yi * n + xi;
+        const decay = Math.max(0, 1 - beam.age * 0.01);
+        psi[i] += beam.amp * decay * 0.3;
+
+        // 测量实际传播速度
+        const dx = beam.x - beam.startX;
+        const dy = beam.y - beam.startY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        beam.speed = dist / beam.age;
+
+        // 衰减或到达边界则消亡
+        if (beam.age > 200 || decay < 0.05) {
+            beam.alive = false;
+            addEvent(tick, `→ 光束 #${beam.id} 传播 ${dist.toFixed(0)} 格 (${beam.speed.toFixed(2)} c*)`, true);
+        }
+    }
+}
+
+// ============================================================
+//  星系碰撞实验：让两个星系对撞
+//  (选两个点，注入星系，然后向对方移动)
+// ============================================================
+let galaxyCollisionState = null; // {step: 0/1, x1,y1, x2,y2}
+
+function triggerGalaxyCollision(x1, y1, x2, y2, mass, radius) {
+    // 注入两个星系
+    injectGalaxy(x1, y1, mass, radius);
+    injectGalaxy(x2, y2, mass, radius);
+
+    // 记录碰撞状态 — 引擎会在后续步骤中移动它们
+    galaxyCollisionState = {
+        x1, y1, x2, y2, mass, radius,
+        step: 0,
+        dist0: Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    };
+
+    experimentLog.push({
+        t: tick, type: 'collision',
+        desc: `星系碰撞实验: (${x1},${y1}) ⟷ (${x2},${y2}) 初始距离=${galaxyCollisionState.dist0.toFixed(0)}`,
+        data: { x1, y1, x2, y2, dist: galaxyCollisionState.dist0 }
+    });
 }
 
 // ============================================================
@@ -1225,6 +1494,108 @@ function renderLabOverlay(cellW, cellH) {
             ctx.font = '9px monospace';
             ctx.fillText(`P${p.id}`, cx + 8, cy - 8);
         }
+    }
+
+    // 黑洞渲染
+    for (const bh of blackHoles) {
+        if (!bh.active) continue;
+        const cx = bh.x * cellW + cellW / 2;
+        const cy = bh.y * cellH + cellH / 2;
+        const ehR = bh.eventHorizon * cellW;
+        const accR = bh.accretionR * cellW;
+
+        // 吸积盘（外层光晕）
+        const grad = ctx.createRadialGradient(cx, cy, ehR * 0.5, cx, cy, accR);
+        grad.addColorStop(0, 'rgba(255,150,0,0.4)');
+        grad.addColorStop(0.3, 'rgba(255,80,0,0.2)');
+        grad.addColorStop(0.7, 'rgba(150,0,100,0.08)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(cx - accR, cy - accR, accR * 2, accR * 2);
+
+        // 事件视界（黑色圆盘）
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(cx, cy, ehR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 事件视界边缘（光环）
+        ctx.strokeStyle = 'rgba(255,200,50,0.8)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, ehR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 旋转的吸积流（动画）
+        const rotAngle = tick * 0.05;
+        for (let a = 0; a < 3; a++) {
+            const angle = rotAngle + a * Math.PI * 2 / 3;
+            const r1 = ehR * 1.2;
+            const r2 = accR * 0.8;
+            ctx.strokeStyle = `rgba(255,180,50,${0.3 - a * 0.08})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.arc(cx, cy, (r1 + r2) / 2, angle, angle + Math.PI * 0.6);
+            ctx.stroke();
+        }
+
+        // 标签
+        ctx.fillStyle = 'rgba(255,200,50,0.9)';
+        ctx.font = '8px monospace';
+        ctx.fillText(`BH${bh.id} M=${bh.mass.toFixed(1)}`, cx + ehR + 2, cy - ehR - 2);
+    }
+
+    // 光束渲染
+    for (const beam of lightBeams) {
+        if (!beam.alive && beam.trail.length === 0) continue;
+        const cx = beam.x * cellW + cellW / 2;
+        const cy = beam.y * cellH + cellH / 2;
+
+        // 轨迹（渐变拖尾）
+        if (beam.trail.length > 1) {
+            for (let i = 1; i < beam.trail.length; i++) {
+                const t0 = beam.trail[i - 1];
+                const t1 = beam.trail[i];
+                const alpha = (i / beam.trail.length) * 0.6;
+                ctx.strokeStyle = `rgba(150,220,255,${alpha})`;
+                ctx.lineWidth = 1.5 * (i / beam.trail.length);
+                ctx.beginPath();
+                ctx.moveTo(t0.x * cellW + cellW / 2, t0.y * cellH + cellH / 2);
+                ctx.lineTo(t1.x * cellW + cellW / 2, t1.y * cellH + cellH / 2);
+                ctx.stroke();
+            }
+        }
+
+        // 光束头部（如果存活）
+        if (beam.alive) {
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+            ctx.fill();
+            // 光晕
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 6);
+            grad.addColorStop(0, 'rgba(150,220,255,0.4)');
+            grad.addColorStop(1, 'rgba(150,220,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(cx - 6, cy - 6, 12, 12);
+        }
+    }
+
+    // 空间瞬移标记（第一点）
+    if (teleportFirstPoint) {
+        const cx = teleportFirstPoint.x * cellW + cellW / 2;
+        const cy = teleportFirstPoint.y * cellH + cellH / 2;
+        const pulse = 0.5 + 0.5 * Math.sin(tick * 0.2);
+        ctx.strokeStyle = `rgba(124,77,255,${0.6 + pulse * 0.4})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 2]);
+        ctx.beginPath();
+        ctx.arc(cx, cy, injectRadius * cellW, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(124,77,255,0.9)';
+        ctx.font = '8px monospace';
+        ctx.fillText('瞬移源', cx + 4, cy - 8);
     }
 }
 
@@ -1989,7 +2360,7 @@ document.getElementById('grid-size').addEventListener('change', (e) => {
 //  物理实验台：事件绑定
 // ============================================================
 
-// Canvas 点击 — 放置探测器或注入扰动
+// Canvas 点击 — 放置探测器或执行天体物理实验
 canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -2008,11 +2379,34 @@ canvas.addEventListener('click', (e) => {
         const m = measureProbe(cx, cy);
         addEvent(tick, `◎ 探测器 P${probe.id} 放置于 (${cx},${cy}) — Ψ=${m.density.toFixed(3)}`);
         updateLabUI();
-    } else if (labTool === 'pulse' || labTool === 'void' || labTool === 'seed' || labTool === 'wall') {
-        // 注入扰动
-        const cnt = injectPerturbation(cx, cy, labTool, injectAmp, injectRadius);
-        const names = { pulse: '信息脉冲', void: '真空洞', seed: '密度种子', wall: '信息墙' };
-        addEvent(tick, `${labTool === 'pulse' ? '✦' : labTool === 'void' ? '○' : labTool === 'seed' ? '★' : '▌'} ${names[labTool]}注入 (${cx},${cy}) 强度=${injectAmp} 半径=${injectRadius} 影响${cnt}单元`, true);
+    } else if (labTool === 'blackhole') {
+        // 黑洞实验
+        const bh = createBlackHole(cx, cy, injectAmp);
+        addEvent(tick, `🕳 黑洞 #${bh.id} 创建 (${cx},${cy}) 质量=${injectAmp} 视界=${bh.eventHorizon.toFixed(1)}`, true);
+        updateLabUI();
+    } else if (labTool === 'galaxy') {
+        // 星系注入
+        injectGalaxy(cx, cy, injectAmp, injectRadius);
+        addEvent(tick, `◉ 星系注入 (${cx},${cy}) 质量=${injectAmp} 半径=${injectRadius}`, true);
+        updateLabUI();
+    } else if (labTool === 'teleport') {
+        // 空间瞬移：两步操作
+        if (!teleportFirstPoint) {
+            teleportFirstPoint = { x: cx, y: cy };
+            addEvent(tick, `⇌ 瞬移源点已选择 (${cx},${cy}) — 点击目标点`);
+        } else {
+            const x1 = teleportFirstPoint.x, y1 = teleportFirstPoint.y;
+            teleportField(x1, y1, cx, cy, injectRadius);
+            addEvent(tick, `⇌ 空间瞬移 (${x1},${y1}) → (${cx},${cy}) 半径=${injectRadius}`, true);
+            teleportFirstPoint = null;
+        }
+        updateLabUI();
+    } else if (labTool === 'light') {
+        // 光速飞行：计算从中心到点击点的方向
+        const centerX = n / 2, centerY = n / 2;
+        const angle = Math.atan2(cy - centerY, cx - centerX);
+        const beam = launchLightBeam(cx, cy, angle, injectAmp);
+        addEvent(tick, `→ 光束 #${beam.id} 发射 (${cx},${cy}) 方向=${(angle * 180 / Math.PI).toFixed(0)}°`, true);
         updateLabUI();
     }
 });
@@ -2037,6 +2431,18 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
         labTool = tool;
         document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+
+        // 更新提示
+        const hints = {
+            probe: '点击宇宙放置探测器 · 测量局部物理量',
+            area: '点击区域中心 · 扫描周围密度分布',
+            blackhole: '<b>黑洞实验</b>：点击宇宙创造黑洞<br>• 黑洞持续吸积周围信息<br>• 事件视界内信息被吞噬<br>• Hawking 辐射缓慢蒸发<br>强度=质量 视界=√质量×1.5',
+            galaxy: '<b>星系注入</b>：点击宇宙放置星系<br>• 对数螺旋旋臂结构<br>• 中心高密度核<br>• 可放置两个观察碰撞<br>强度=质量 半径=旋臂大小',
+            teleport: '<b>空间瞬移</b>：点击两个点<br>1. 第一次点击：选择源点<br>2. 第二次点击：选择目标点<br>源区域信息场与目标区域交换<br>半径=瞬移范围',
+            light: '<b>光速飞行</b>：点击宇宙发射光束<br>• 从中心到点击方向发射<br>• 以 c*=1 (Δx/Δt) 传播<br>• 拖尾显示光锥轨迹<br>• 自动测量传播速度'
+        };
+        document.getElementById('tool-hint').innerHTML = hints[tool] || '';
+
         // 切换到对应面板
         if (tool === 'probe' || tool === 'area') {
             document.getElementById('labtab-probe').click();
@@ -2056,12 +2462,29 @@ document.getElementById('inject-radius').addEventListener('input', (e) => {
     document.getElementById('inject-radius-val').textContent = injectRadius;
 });
 
-// 清除扰动（恢复场到无扰动状态不可行，但可以清除探测器）
+// 清除实验
 document.getElementById('btn-clear-inject').addEventListener('click', () => {
-    // 实际上扰动已经融入场演化，这里清除探测器
     probes = [];
     selectedProbeId = -1;
-    addEvent(tick, '清除所有探测器');
+    blackHoles = [];
+    lightBeams = [];
+    teleportFirstPoint = null;
+    addEvent(tick, '清除所有实验工具');
+    updateLabUI();
+});
+
+// 实验记录按钮
+document.getElementById('btn-experiment-info').addEventListener('click', () => {
+    if (experimentLog.length === 0) {
+        addEvent(tick, '尚无实验记录');
+        updateLabUI();
+        return;
+    }
+    // 输出实验记录到事件日志
+    for (const log of experimentLog.slice(-10)) {
+        addEvent(log.t, `[实验] ${log.desc}`);
+    }
+    addEvent(tick, `共 ${experimentLog.length} 条实验记录 (显示最近10条)`);
     updateLabUI();
 });
 
