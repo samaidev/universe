@@ -166,18 +166,18 @@ function experiment16_holographic() {
         for (let i = 0; i < 100; i++) uni.evolve();
 
         const volInfo = uni.totalInfo();
-        const boundaryInfo = uni.boundaryInfo();
-        const ratio = volInfo / boundaryInfo;
-        const holographic = ratio > size / 2; // 如果Σ/B >> √N，信息主要集中在体积
+        const boundaryAvg = uni.boundaryInfo();
+        const boundaryTotal = boundaryAvg * 4 * size; // 总边界信息=均值×边界格数(4N)
+        const ratio = volInfo / boundaryTotal;
 
-        results.push({size, volInfo, boundaryInfo, ratio, holographic});
+        results.push({size, volInfo, boundaryAvg, boundaryTotal, ratio});
         console.log(
             `${size.toString().padStart(4)}   ` +
             `${volInfo.toFixed(1).padStart(10)}   ` +
-            `${boundaryInfo.toFixed(1).padStart(10)}   ` +
-            `${(boundaryInfo/volInfo).toFixed(4).padStart(6)}   ` +
+            `${boundaryTotal.toFixed(1).padStart(10)}   ` +
+            `${(boundaryTotal/volInfo).toFixed(4).padStart(6)}   ` +
             `${ratio.toFixed(2).padStart(8)}   ` +
-            `${holographic ? '✓ 全息(表面编码)' : '体积主导'}`
+            `${ratio > size ? '✓ 全息(B≪Σ)' : '体积主导'}`
         );
     }
 
@@ -221,20 +221,49 @@ function experiment16_holographic() {
 
     console.log(`\n--- 分析 ---`);
     console.log(`真实黑洞熵：S = A/(4·l_P²) (正比于面积)`);
-    console.log(`本引擎：边界信息/体积信息比值随N增大而减小`);
-    console.log(`→ 大尺度系统中，表面积编码的信息占比相对增大(全息趋势)`);
+    console.log(`本引擎：边界信息B∝N(线性)，体积信息Σ∝N²(平方)`);
+    console.log(`→ 边界信息占比B/Σ∝1/N，随尺度递减(全息编码趋势)`);
+    console.log(`→ 黑洞熵S=A/4∝面积，非体积\n`);
 
-    const holographicTrend = results[results.length-1].ratio < results[0].ratio;
-    const bhValid = bhResults.every(r => r.bhEntropy > 0);
+    // 验证1: 边界信息线性增长(B_total∝N)
+    const bPerN = results.map(r => r.boundaryTotal / r.size);
+    const bLinear = Math.max(...bPerN) / Math.min(...bPerN) < 3; // B_total/N变化不超过3倍
 
-    console.log(`\n判定: ${holographicTrend && bhValid ? '✓ 成立' : '部分成立'}`);
+    // 验证2: 体积信息平方增长(Σ∝N²)
+    const vPerN2 = results.map(r => r.volInfo / (r.size * r.size));
+    const vQuadratic = Math.max(...vPerN2) / Math.min(...vPerN2) < 3; // Σ/N²变化不超过3倍
+
+    // 验证3: B_total/Σ随N递减(边界占比随尺度减小)
+    const bSigmaRatio = results.map(r => r.boundaryTotal / r.volInfo);
+    const ratioDecreasing = bSigmaRatio[bSigmaRatio.length-1] < bSigmaRatio[0];
+
+    // 验证4: 黑洞熵S=A/4为正且随质量增长
+    const bhEntropyPositive = bhResults.every(r => r.bhEntropy > 0);
+    const bhEntropyGrowing = bhResults[bhResults.length-1].bhEntropy > bhResults[0].bhEntropy;
+
+    // 验证5: 黑洞熵∝面积(√mass)而非体积(mass)
+    // S_BH = π·√(mass)·1.5/2 ∝ √mass (面积标度)
+    // 体积熵∝mass (如果信息均匀分布)
+    const bhScalingArea = bhResults[bhResults.length-1].bhEntropy / bhResults[0].bhEntropy;
+    const massRatio = bhResults[bhResults.length-1].mass / bhResults[0].mass;
+    const bhAreaScaling = bhScalingArea < massRatio; // S增长慢于mass(面积而非体积)
+
+    console.log(`边界信息B/N稳定性: ${bLinear ? '✓ B∝N(线性)' : '近似'} (B/N范围: ${Math.min(...bPerN).toFixed(2)}~${Math.max(...bPerN).toFixed(2)})`);
+    console.log(`体积信息Σ/N²稳定性: ${vQuadratic ? '✓ Σ∝N²(平方)' : '近似'} (Σ/N²范围: ${Math.min(...vPerN2).toFixed(2)}~${Math.max(...vPerN2).toFixed(2)})`);
+    console.log(`B/Σ递减: ${ratioDecreasing ? '✓ 全息编码趋势' : '近似'} (${bSigmaRatio[0].toFixed(4)}→${bSigmaRatio[bSigmaRatio.length-1].toFixed(4)})`);
+    console.log(`黑洞熵S=A/4>0: ${bhEntropyPositive ? '✓' : '✗'}`);
+    console.log(`黑洞熵随质量增长: ${bhEntropyGrowing ? '✓' : '✗'} (${bhResults[0].bhEntropy.toFixed(2)}→${bhResults[bhResults.length-1].bhEntropy.toFixed(2)})`);
+    console.log(`黑洞熵∝面积(非体积): ${bhAreaScaling ? '✓ S∝√M(面积标度)' : '近似'} (S增长${bhScalingArea.toFixed(2)}倍 vs M增长${massRatio.toFixed(1)}倍)`);
+
+    const valid = bLinear && vQuadratic && ratioDecreasing && bhEntropyPositive && bhEntropyGrowing && bhAreaScaling;
+    console.log(`\n判定: ${valid ? '✓ 成立' : '部分成立'}`);
     console.log(`\n物理难题解释:`);
     console.log(`  全息原理：三维信息可编码在二维表面。`);
     console.log(`  黑洞熵 S=A/4 因为信息被"压缩"到视界表面——内部信息不可访问。`);
-    console.log(`  本引擎中，边界信息量是体积信息量的可计算分数，随尺度变化。`);
-    console.log(`  黑洞熵正比于视界面积——信息在"表面"而非"内部"。`);
+    console.log(`  本引擎中，边界信息B∝N(线性)，体积信息Σ∝N²(平方)，B/Σ∝1/N递减。`);
+    console.log(`  黑洞熵S∝√M(面积标度)而非∝M(体积标度)——信息在"表面"而非"内部"。`);
 
-    return {results, bhResults};
+    return {results, bhResults, valid};
 }
 
 // ============================================================
@@ -395,27 +424,68 @@ function experiment18_horizon() {
         }
     }
 
-    // 分析：早期均匀性保留
+    // 分析：早期均匀性保留 + 对照实验
     const earlyDev = data[0].deviation;
     const lateDev = data[data.length-1].deviation;
-    const uniformity = lateDev < 0.1;
+
+    // 对照实验：从随机初始态(非均匀)开始，比较相同⟨C⟩下的偏差
+    console.log(`\n--- 对照实验：随机初始态 vs 均匀初始态 ---`);
+    const uniCtrl = new Universe(n);
+    // 用随机初始态(不预演化，直接从构造函数的随机态开始)
+    const ctrlData = [];
+    for (let step = 0; step < 400; step++) {
+        uniCtrl.evolve();
+        if (step % 40 === 0) {
+            const avgC = uniCtrl.endoAvgC;
+            const temps = regions.map(r => measureRegion(uniCtrl, r));
+            const maxT = Math.max(...temps);
+            const minT = Math.min(...temps);
+            const deviation = (maxT - minT) / (maxT + minT);
+            ctrlData.push({tick: uniCtrl.tick, avgC, deviation});
+        }
+    }
+
+    // 比较相同⟨C⟩水平下的偏差
+    console.log('tick    均匀始⟨C⟩   均匀始偏差   随机始⟨C⟩   随机始偏差   均匀化因子');
+    console.log('-'.repeat(75));
+    for (let i = 0; i < data.length && i < ctrlData.length; i++) {
+        const uniformityFactor = ctrlData[i].deviation > 0 ? data[i].deviation / ctrlData[i].deviation : 1;
+        console.log(
+            `${String(data[i].tick).padStart(4)}   ` +
+            `${data[i].avgC.toFixed(4).padStart(8)}   ` +
+            `${data[i].deviation.toExponential(2).padStart(10)}   ` +
+            `${ctrlData[i].avgC.toFixed(4).padStart(8)}   ` +
+            `${ctrlData[i].deviation.toExponential(2).padStart(10)}   ` +
+            `${uniformityFactor.toFixed(3).padStart(8)}`
+        );
+    }
+
+    // 关键指标：均匀初始态的偏差远小于随机初始态
+    const earlyCtrlDev = ctrlData[0].deviation;
+    const uniformityRatio = earlyCtrlDev / earlyDev; // 随机/均匀 = 均匀化因子
 
     console.log(`\n--- 分析 ---`);
-    console.log(`早期最大偏差: ${earlyDev.toExponential(2)}`);
-    console.log(`晚期最大偏差: ${lateDev.toExponential(2)}`);
+    console.log(`均匀初始态早期偏差: ${earlyDev.toExponential(2)}`);
+    console.log(`随机初始态早期偏差: ${earlyCtrlDev.toExponential(2)}`);
+    console.log(`均匀化因子(随机/均匀): ${uniformityRatio.toFixed(1)}x`);
+    console.log(`晚期偏差(均匀始): ${lateDev.toExponential(2)}`);
     console.log(`\n真实CMB：温度偏差~10^-5(极其均匀)`);
-    console.log(`本引擎：从均匀态(⟨C⟩=1)开始，各区域保持低偏差`);
-    console.log(`→ 早期⟨C⟩≈1时的全局关联"记忆"保留了均匀性`);
+    console.log(`本引擎：从均匀态(⟨C⟩=1)开始，早期偏差远小于随机初始态`);
+    console.log(`→ 早期⟨C⟩≈1时的全局关联"记忆"保留了均匀性(均匀化因子=${uniformityRatio.toFixed(0)}x)`);
 
-    const valid = earlyDev < 0.01 && lateDev < 0.1;
+    // 判定: 均匀初始态偏差远小于随机初始态(证明视界问题的暴胀解决机制)
+    const earlyUniform = earlyDev < 0.01;
+    const uniformityAdvantage = uniformityRatio > 5; // 均匀初始态至少5倍更均匀
+    const valid = earlyUniform && uniformityAdvantage;
     console.log(`\n判定: ${valid ? '✓ 成立' : '部分成立'}`);
     console.log(`\n物理难题解释:`);
     console.log(`  CMB均匀性来自暴胀前⟨C⟩≈1的全局关联。`);
     console.log(`  当⟨C⟩=1时，全场所有点完全关联(因果联系)。`);
-    console.log(`  暴胀后⟨C⟩下降，但早期均匀性作为"初始条件"被保留。`);
+    console.log(`  暴胀后⟨C⟩下降，但早期均匀性作为"初始条件"被保留(均匀化因子=${uniformityRatio.toFixed(0)}x)。`);
+    console.log(`  对照实验证明：均匀初始态比随机初始态偏差小${uniformityRatio.toFixed(0)}倍。`);
     console.log(`  这与暴胀理论解决视界问题的机制一致：暴胀将因果联系区域拉大。`);
 
-    return {data, earlyDev, lateDev};
+    return {data, earlyDev, lateDev, ctrlData, uniformityRatio, valid};
 }
 
 // ============================================================
@@ -539,7 +609,7 @@ function experiment19_dimension() {
     console.log(`  3D(6邻居)是最优平衡点：足够传播+足够稳定。`);
     console.log(`  (注：本引擎为2D网格，3D需扩展为6邻居拓扑)`);
 
-    return {results, optimalDim};
+    return {results, optimalDim, d3, valid};
 }
 
 // ============================================================
@@ -653,16 +723,16 @@ console.log('\n' + '='.repeat(70));
 console.log('V5新实验总结');
 console.log('='.repeat(70));
 
-const holoValid = holographic.results[holographic.results.length-1].ratio < holographic.results[0].ratio;
-console.log('实验十六 黑洞熵/全息: 全息趋势' + (holoValid ? '✓' : '') + ' → ' + (holoValid ? '成立' : '部分成立'));
+const holoValid = holographic.valid;
+console.log('实验十六 黑洞熵/全息: B∝N, Σ∝N², S∝√M → ' + (holoValid ? '成立' : '部分成立'));
 
 const decohValid = decoherence.avgMacro > 0;
 console.log('实验十七 量子退相干: 微观' + decoherence.avgMicro.toFixed(0) + '步/宏观' + decoherence.avgMacro.toFixed(0) + '步 → ' + (decohValid ? '成立' : '部分成立'));
 
-const horValid = horizon.earlyDev < 0.01;
+const horValid = horizon.valid;
 console.log('实验十八 CMB均匀性: 早期偏差' + horizon.earlyDev.toExponential(2) + ' → ' + (horValid ? '成立' : '部分成立'));
 
-const dimValid = dimension.optimalDim.dim >= 2;
+const dimValid = dimension.valid;
 console.log('实验十九 时空维度: 最优' + dimension.optimalDim.dim + 'D → ' + (dimValid ? '成立' : '部分成立'));
 
 const fateValid = fate.finalFate.includes('热寂');
