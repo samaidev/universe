@@ -296,6 +296,134 @@ body {
 .event-log .event .time { color: var(--accent2); }
 .event-log .event .text { color: var(--text); }
 .event-log .event.critical .text { color: var(--gold); }
+
+/* ===== Physics Lab ===== */
+.lab-tab-bar {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+}
+.lab-tab {
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+.lab-tab:hover { color: var(--text); }
+.lab-tab.active {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(79,195,247,0.08);
+}
+.tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.tool-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 6px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 11px;
+    text-align: center;
+    transition: all 0.2s;
+    line-height: 1.4;
+}
+.tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tool-btn.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(255,193,7,0.08);
+    box-shadow: 0 0 6px rgba(255,193,7,0.2);
+}
+.tool-btn .tool-icon { font-size: 16px; display: block; margin-bottom: 2px; }
+.probe-list {
+    max-height: 160px;
+    overflow-y: auto;
+    font-size: 11px;
+}
+.probe-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    border-radius: 4px;
+    margin-bottom: 3px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.probe-item:hover { border-color: var(--accent); }
+.probe-item.selected { border-color: var(--gold); background: rgba(255,193,7,0.06); }
+.probe-item .pid { color: var(--accent2); font-family: var(--font-mono); }
+.probe-item .pcoord { color: var(--text-dim); font-size: 10px; }
+.probe-item .pdel { color: var(--warn); cursor: pointer; padding: 0 4px; }
+.gauge-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+.gauge {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+}
+.gauge .glabel { font-size: 9px; color: var(--text-dim); text-transform: uppercase; }
+.gauge .gval { font-family: var(--font-mono); font-size: 16px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+.gauge .gunit { font-size: 9px; color: var(--text-dim); }
+.gauge.g-grav .gval { color: var(--warn); }
+.gauge.g-diff .gval { color: var(--accent3); }
+.gauge.g-ent .gval { color: var(--accent2); }
+.gauge.g-dens .gval { color: var(--gold); }
+.chart-canvas {
+    width: 100%;
+    height: 100px;
+    background: #000;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+}
+.lab-hint {
+    font-size: 10px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    padding: 6px 8px;
+    background: rgba(79,195,247,0.04);
+    border-radius: 4px;
+    border-left: 2px solid var(--accent);
+    margin-top: 6px;
+}
+.tool-param {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+}
+.tool-param input[type=range] {
+    flex: 1;
+    accent-color: var(--gold);
+    height: 4px;
+}
+.tool-param .pval {
+    color: var(--gold);
+    font-family: var(--font-mono);
+    min-width: 36px;
+    text-align: right;
+    font-size: 10px;
+}
 </style>
 </head>
 <body>
@@ -380,6 +508,97 @@ body {
             </div>
             <div style="font-size:10px;color:var(--text-dim);margin-top:6px;">
                 暴胀/星系/生命/文明均由信息场内生涌现
+            </div>
+        </div>
+
+        <!-- ===== Physics Lab ===== -->
+        <div class="card">
+            <h3>物理实验台</h3>
+            <div class="lab-tab-bar">
+                <div class="lab-tab active" data-labtab="probe" id="labtab-probe">探测器</div>
+                <div class="lab-tab" data-labtab="injector" id="labtab-injector">扰动器</div>
+                <div class="lab-tab" data-labtab="chart" id="labtab-chart">数据图</div>
+            </div>
+
+            <!-- 探测器面板 -->
+            <div id="lab-panel-probe" class="lab-panel">
+                <div class="tool-grid">
+                    <div class="tool-btn active" data-tool="probe" id="tool-probe">
+                        <span class="tool-icon">◎</span>探测点
+                    </div>
+                    <div class="tool-btn" data-tool="area" id="tool-area">
+                        <span class="tool-icon">◧</span>区域扫描
+                    </div>
+                </div>
+                <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px;">
+                    点击宇宙放置探测器 · 测量局部物理量
+                </div>
+                <div class="gauge-grid" id="probe-gauges">
+                    <div class="gauge g-dens"><div class="glabel">密度 Ψ</div><div class="gval" id="g-dens">--</div><div class="gunit">ρ</div></div>
+                    <div class="gauge"><div class="glabel">关联度 C</div><div class="gval" id="g-corr">--</div><div class="gunit">[0,1]</div></div>
+                    <div class="gauge g-diff"><div class="glabel">扩散 D*</div><div class="gval" id="g-diff">--</div><div class="gunit">⟨C⟩</div></div>
+                    <div class="gauge g-grav"><div class="glabel">引力 G*</div><div class="gval" id="g-grav">--</div><div class="gunit">1-⟨C⟩</div></div>
+                    <div class="gauge g-ent"><div class="glabel">局部熵 S</div><div class="gval" id="g-entropy">--</div><div class="gunit">bit</div></div>
+                    <div class="gauge"><div class="glabel">梯度 ∇Ψ</div><div class="gval" id="g-grad">--</div><div class="gunit">Δρ/Δx</div></div>
+                </div>
+                <div style="margin-top:10px;font-size:11px;color:var(--text-dim);margin-bottom:4px;">已放置探测器:</div>
+                <div class="probe-list" id="probe-list">
+                    <div style="font-size:10px;color:var(--text-dim);padding:4px;">无探测器 — 点击宇宙放置</div>
+                </div>
+            </div>
+
+            <!-- 扰动器面板 -->
+            <div id="lab-panel-injector" class="lab-panel" style="display:none">
+                <div class="tool-grid">
+                    <div class="tool-btn" data-tool="pulse" id="tool-pulse">
+                        <span class="tool-icon">✦</span>信息脉冲
+                    </div>
+                    <div class="tool-btn" data-tool="void" id="tool-void">
+                        <span class="tool-icon">○</span>真空洞
+                    </div>
+                    <div class="tool-btn" data-tool="seed" id="tool-seed">
+                        <span class="tool-icon">★</span>密度种子
+                    </div>
+                    <div class="tool-btn" data-tool="wall" id="tool-wall">
+                        <span class="tool-icon">▌</span>信息墙
+                    </div>
+                </div>
+                <div class="tool-param">
+                    强度
+                    <input type="range" id="inject-amp" min="0.5" max="10" step="0.5" value="3">
+                    <span class="pval" id="inject-amp-val">3.0</span>
+                </div>
+                <div class="tool-param">
+                    半径
+                    <input type="range" id="inject-radius" min="1" max="15" step="1" value="3">
+                    <span class="pval" id="inject-radius-val">3</span>
+                </div>
+                <div class="lab-hint">
+                    在宇宙中注入扰动，观察信息场的响应。<br>
+                    • 脉冲：注入信息能量<br>
+                    • 真空：抽空局部信息<br>
+                    • 种子：创造高密度核<br>
+                    • 墙：制造信息屏障
+                </div>
+                <div style="margin-top:8px">
+                    <button class="btn" id="btn-clear-inject" style="font-size:11px;padding:5px 12px">清除所有扰动</button>
+                </div>
+            </div>
+
+            <!-- 数据图表面板 -->
+            <div id="lab-panel-chart" class="lab-panel" style="display:none">
+                <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">
+                    全局演化时间序列（最近 200 步）
+                </div>
+                <div style="font-size:10px;color:var(--accent);margin-bottom:2px;">⟨C⟩ 全局关联度</div>
+                <canvas class="chart-canvas" id="chart-corr" width="280" height="100"></canvas>
+                <div style="font-size:10px;color:var(--gold);margin:6px 0 2px;">Ψ_max / Ψ_min 密度范围</div>
+                <canvas class="chart-canvas" id="chart-density" width="280" height="100"></canvas>
+                <div style="font-size:10px;color:var(--accent3);margin:6px 0 2px;">结构数量涌现</div>
+                <canvas class="chart-canvas" id="chart-structures" width="280" height="100"></canvas>
+                <div class="lab-hint">
+                    探测器选中后，其时间序列将叠加显示在对应图表上。
+                </div>
             </div>
         </div>
 
@@ -583,6 +802,26 @@ let galaxyFirstLogged = false;
 let prevAvgC = 1.0;
 let cosmicAge = 0;
 
+// ===== 物理实验台状态 =====
+let labTool = 'probe';          // 当前工具
+let labTab = 'probe';           // 当前面板
+let probes = [];                // 探测器列表 [{id, x, y, history:[{t,v}]}]
+let probeIdCounter = 0;
+let selectedProbeId = -1;
+let injectAmp = 3.0;
+let injectRadius = 3;
+
+// 全局历史数据（图表用）
+let globalHistory = {
+    corr: [],       // ⟨C⟩ 时间序列
+    dmax: [],       // Ψ_max
+    dmin: [],       // Ψ_min
+    galaxies: [],   // 星系数
+    life: [],       // 生命数
+    civ: []         // 文明数
+};
+const HISTORY_MAX = 200;
+
 // 事件日志
 let events = [];
 
@@ -660,6 +899,11 @@ function initGrid(n) {
     endoLinks = 0;
     endoGravLinks = 0;
     endoIsolated = 0;
+    // 重置实验台状态
+    probes = [];
+    probeIdCounter = 0;
+    selectedProbeId = -1;
+    globalHistory = { corr: [], dmax: [], dmin: [], galaxies: [], life: [], civ: [] };
     events = [];
     addEvent(0, '宇宙初始化，原始相位场涨落');
 }
@@ -824,6 +1068,164 @@ function evolveStep() {
     detectGalaxies();
     detectLifeAndCivilization();
     prevAvgC = avgC;
+
+    // ===== 物理实验台：数据采集 =====
+    recordGlobalHistory();
+    recordProbeData();
+}
+
+// ============================================================
+//  物理实验台：全局历史记录
+// ============================================================
+function recordGlobalHistory() {
+    let dmax = -Infinity, dmin = Infinity;
+    for (let i = 0; i < psi.length; i++) {
+        if (psi[i] > dmax) dmax = psi[i];
+        if (psi[i] < dmin) dmin = psi[i];
+    }
+    globalHistory.corr.push(endoAvgC);
+    globalHistory.dmax.push(dmax);
+    globalHistory.dmin.push(dmin);
+    globalHistory.galaxies.push(galaxies.length);
+    globalHistory.life.push(lifeOrigins.length);
+    globalHistory.civ.push(civilizations.length);
+    if (globalHistory.corr.length > HISTORY_MAX) {
+        globalHistory.corr.shift();
+        globalHistory.dmax.shift();
+        globalHistory.dmin.shift();
+        globalHistory.galaxies.shift();
+        globalHistory.life.shift();
+        globalHistory.civ.shift();
+    }
+}
+
+// ============================================================
+//  物理实验台：探测器数据采集
+// ============================================================
+function recordProbeData() {
+    const n = gridN;
+    for (const p of probes) {
+        const i = p.y * n + p.x;
+        p.history.push({ t: tick, v: psi[i] });
+        if (p.history.length > HISTORY_MAX) p.history.shift();
+    }
+}
+
+// ============================================================
+//  物理实验台：局部物理量测量
+// ============================================================
+function measureProbe(x, y) {
+    const n = gridN;
+    const i = y * n + x;
+    const cur = psi[i];
+
+    // 局部关联度（与4邻居的平均关联）
+    let localC = 0;
+    let gradSum = 0;
+    for (let d = 0; d < 4; d++) {
+        const j = nIdxCache[i * 4 + d];
+        localC += correlation(cur, psi[j]);
+        gradSum += Math.abs(psi[j] - cur);
+    }
+    localC /= 4;
+    const grad = gradSum / 4;
+
+    // 局部熵
+    let entropy = 0;
+    for (let d = 0; d < 4; d++) {
+        const j = nIdxCache[i * 4 + d];
+        const p = Math.abs(psi[j]) / (Math.abs(cur) + Math.abs(psi[j]) + DELTA_PSI);
+        if (p > 0 && p < 1) entropy -= p * Math.log2(p);
+    }
+
+    return {
+        density: cur,
+        corr: localC,
+        diff: endoAvgC,      // 全局涌现扩散
+        grav: 1 - endoAvgC,  // 全局涌现引力
+        entropy: entropy,
+        grad: grad
+    };
+}
+
+// ============================================================
+//  物理实验台：注入扰动
+// ============================================================
+function injectPerturbation(cx, cy, type, amp, radius) {
+    const n = gridN;
+    const r2 = radius * radius;
+    let count = 0;
+
+    for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+            const dist2 = dx * dx + dy * dy;
+            if (dist2 > r2) continue;
+            const x = ((cx + dx) % n + n) % n;
+            const y = ((cy + dy) % n + n) % n;
+            const i = y * n + x;
+            const dist = Math.sqrt(dist2);
+            const falloff = 1 - dist / radius;
+
+            if (type === 'pulse') {
+                // 信息脉冲：高斯注入
+                psi[i] += amp * falloff * falloff;
+            } else if (type === 'void') {
+                // 真空洞：抽空信息
+                psi[i] *= Math.max(0, 1 - amp * falloff * 0.5);
+            } else if (type === 'seed') {
+                // 密度种子：强制高密度
+                psi[i] = Math.max(psi[i], amp * falloff);
+            } else if (type === 'wall') {
+                // 信息墙：设为平均值
+                psi[i] = amp * falloff;
+            }
+            count++;
+        }
+    }
+    return count;
+}
+
+// ============================================================
+//  物理实验台：渲染探测器与扰动标记
+// ============================================================
+function renderLabOverlay(cellW, cellH) {
+    // 探测器
+    for (const p of probes) {
+        const cx = p.x * cellW + cellW / 2;
+        const cy = p.y * cellH + cellH / 2;
+        const isSelected = p.id === selectedProbeId;
+        const color = isSelected ? '255,193,7' : '79,195,247';
+
+        // 探测器外圈
+        ctx.strokeStyle = `rgba(${color},0.9)`;
+        ctx.lineWidth = isSelected ? 2 : 1.2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 内点
+        ctx.fillStyle = `rgba(${color},0.8)`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 十字准线
+        ctx.strokeStyle = `rgba(${color},0.4)`;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx - 10, cy); ctx.lineTo(cx - 7, cy);
+        ctx.moveTo(cx + 7, cy); ctx.lineTo(cx + 10, cy);
+        ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy - 7);
+        ctx.moveTo(cx, cy + 7); ctx.lineTo(cx, cy + 10);
+        ctx.stroke();
+
+        // ID 标签
+        if (isSelected) {
+            ctx.fillStyle = 'rgba(255,193,7,0.9)';
+            ctx.font = '9px monospace';
+            ctx.fillText(`P${p.id}`, cx + 8, cy - 8);
+        }
+    }
 }
 
 // ============================================================
@@ -1137,6 +1539,9 @@ function render() {
         ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
         ctx.fill();
     }
+
+    // 物理实验台：探测器覆盖层
+    renderLabOverlay(cellW, cellH);
 }
 
 function heatColorRGB(t) {
@@ -1265,6 +1670,204 @@ function updateUI() {
     logEl.innerHTML = events.slice(-15).reverse().map(e =>
         `<div class="event${e.critical ? ' critical' : ''}"><span class="time">[t=${e.time}]</span> <span class="text">${e.text}</span></div>`
     ).join('');
+
+    // ===== 物理实验台 UI 更新 =====
+    updateLabUI();
+}
+
+// ============================================================
+//  物理实验台 UI 更新
+// ============================================================
+function updateLabUI() {
+    // 仪表读数（选中探测器，或默认第一个）
+    const activeProbe = probes.find(p => p.id === selectedProbeId) || probes[0];
+    if (activeProbe) {
+        const m = measureProbe(activeProbe.x, activeProbe.y);
+        document.getElementById('g-dens').textContent = m.density.toFixed(3);
+        document.getElementById('g-corr').textContent = m.corr.toFixed(3);
+        document.getElementById('g-diff').textContent = m.diff.toFixed(3);
+        document.getElementById('g-grav').textContent = m.grav.toFixed(3);
+        document.getElementById('g-entropy').textContent = m.entropy.toFixed(3);
+        document.getElementById('g-grad').textContent = m.grad.toFixed(3);
+    } else {
+        ['g-dens','g-corr','g-diff','g-grav','g-entropy','g-grad'].forEach(id => {
+            document.getElementById(id).textContent = '--';
+        });
+    }
+
+    // 探测器列表
+    const listEl = document.getElementById('probe-list');
+    if (probes.length === 0) {
+        listEl.innerHTML = '<div style="font-size:10px;color:var(--text-dim);padding:4px;">无探测器 — 点击宇宙放置</div>';
+    } else {
+        listEl.innerHTML = probes.map(p => {
+            const sel = p.id === selectedProbeId ? ' selected' : '';
+            const m = measureProbe(p.x, p.y);
+            return `<div class="probe-item${sel}" data-probe-id="${p.id}">
+                <span class="pid">P${p.id}</span>
+                <span class="pcoord">(${p.x},${p.y}) Ψ=${m.density.toFixed(2)}</span>
+                <span class="pdel" data-del-id="${p.id}">✕</span>
+            </div>`;
+        }).join('');
+    }
+
+    // 数据图表（仅在图表面板可见时绘制）
+    const chartPanel = document.getElementById('lab-panel-chart');
+    if (chartPanel.style.display !== 'none') {
+        drawCharts();
+    }
+}
+
+// ============================================================
+//  物理实验台：图表绘制
+// ============================================================
+function drawCharts() {
+    drawTimeSeries('chart-corr', globalHistory.corr, '#4fc3f7', 0, 1, null);
+    drawDualSeries('chart-density', globalHistory.dmax, globalHistory.dmin, '#ffc107', '#ff5252');
+    drawTripleSeries('chart-structures', globalHistory.galaxies, globalHistory.life, globalHistory.civ);
+}
+
+function drawTimeSeries(canvasId, data, color, minV, maxV, probeData) {
+    const cv = document.getElementById(canvasId);
+    if (!cv) return;
+    const cx = cv.getContext('2d');
+    const w = cv.width, h = cv.height;
+    cx.fillStyle = '#000';
+    cx.fillRect(0, 0, w, h);
+    if (data.length < 2) return;
+
+    // 网格
+    cx.strokeStyle = 'rgba(255,255,255,0.06)';
+    cx.lineWidth = 0.5;
+    for (let i = 0; i <= 4; i++) {
+        const y = (i / 4) * h;
+        cx.beginPath(); cx.moveTo(0, y); cx.lineTo(w, y); cx.stroke();
+    }
+
+    // 全局曲线
+    cx.strokeStyle = color;
+    cx.lineWidth = 1.5;
+    cx.beginPath();
+    const range = maxV - minV || 1;
+    for (let i = 0; i < data.length; i++) {
+        const x = (i / (data.length - 1)) * w;
+        const y = h - ((data[i] - minV) / range) * h;
+        if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+    }
+    cx.stroke();
+
+    // 探测器曲线（如果选中）
+    if (probeData && probeData.length > 1) {
+        cx.strokeStyle = 'rgba(255,193,7,0.8)';
+        cx.lineWidth = 1;
+        cx.setLineDash([3, 2]);
+        cx.beginPath();
+        const pmin = Math.min(...probeData.map(d => d.v));
+        const pmax = Math.max(...probeData.map(d => d.v));
+        const prange = pmax - pmin || 1;
+        for (let i = 0; i < probeData.length; i++) {
+            const x = (i / (probeData.length - 1)) * w;
+            const y = h - ((probeData[i].v - pmin) / prange) * h;
+            if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+        }
+        cx.stroke();
+        cx.setLineDash([]);
+    }
+}
+
+function drawDualSeries(canvasId, data1, data2, color1, color2) {
+    const cv = document.getElementById(canvasId);
+    if (!cv) return;
+    const cx = cv.getContext('2d');
+    const w = cv.width, h = cv.height;
+    cx.fillStyle = '#000';
+    cx.fillRect(0, 0, w, h);
+    if (data1.length < 2) return;
+
+    cx.strokeStyle = 'rgba(255,255,255,0.06)';
+    cx.lineWidth = 0.5;
+    for (let i = 0; i <= 4; i++) {
+        const y = (i / 4) * h;
+        cx.beginPath(); cx.moveTo(0, y); cx.lineTo(w, y); cx.stroke();
+    }
+
+    const allMax = Math.max(...data1, ...data2);
+    const allMin = Math.min(...data1, ...data2, 0);
+    const range = allMax - allMin || 1;
+
+    // max 曲线
+    cx.strokeStyle = color1;
+    cx.lineWidth = 1.5;
+    cx.beginPath();
+    for (let i = 0; i < data1.length; i++) {
+        const x = (i / (data1.length - 1)) * w;
+        const y = h - ((data1[i] - allMin) / range) * h;
+        if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+    }
+    cx.stroke();
+
+    // min 曲线
+    cx.strokeStyle = color2;
+    cx.lineWidth = 1.5;
+    cx.beginPath();
+    for (let i = 0; i < data2.length; i++) {
+        const x = (i / (data2.length - 1)) * w;
+        const y = h - ((data2[i] - allMin) / range) * h;
+        if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+    }
+    cx.stroke();
+
+    // 填充区域
+    cx.fillStyle = 'rgba(255,193,7,0.08)';
+    cx.beginPath();
+    for (let i = 0; i < data1.length; i++) {
+        const x = (i / (data1.length - 1)) * w;
+        const y = h - ((data1[i] - allMin) / range) * h;
+        if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+    }
+    for (let i = data2.length - 1; i >= 0; i--) {
+        const x = (i / (data2.length - 1)) * w;
+        const y = h - ((data2[i] - allMin) / range) * h;
+        cx.lineTo(x, y);
+    }
+    cx.closePath();
+    cx.fill();
+}
+
+function drawTripleSeries(canvasId, gData, lData, cData) {
+    const cv = document.getElementById(canvasId);
+    if (!cv) return;
+    const cx = cv.getContext('2d');
+    const w = cv.width, h = cv.height;
+    cx.fillStyle = '#000';
+    cx.fillRect(0, 0, w, h);
+    if (gData.length < 2) return;
+
+    cx.strokeStyle = 'rgba(255,255,255,0.06)';
+    cx.lineWidth = 0.5;
+    for (let i = 0; i <= 4; i++) {
+        const y = (i / 4) * h;
+        cx.beginPath(); cx.moveTo(0, y); cx.lineTo(w, y); cx.stroke();
+    }
+
+    const allMax = Math.max(...gData, ...lData, ...cData, 1);
+    const range = allMax || 1;
+
+    const colors = ['#4fc3f7', '#00e676', '#7c4dff'];
+    const datas = [gData, lData, cData];
+    for (let s = 0; s < 3; s++) {
+        const d = datas[s];
+        if (d.length < 2) continue;
+        cx.strokeStyle = colors[s];
+        cx.lineWidth = 1.5;
+        cx.beginPath();
+        for (let i = 0; i < d.length; i++) {
+            const x = (i / (d.length - 1)) * w;
+            const y = h - (d[i] / range) * h;
+            if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+        }
+        cx.stroke();
+    }
 }
 
 function updateConstants() {
@@ -1381,6 +1984,103 @@ document.getElementById('grid-size').addEventListener('change', (e) => {
         tl.appendChild(node);
     });
 })();
+
+// ============================================================
+//  物理实验台：事件绑定
+// ============================================================
+
+// Canvas 点击 — 放置探测器或注入扰动
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const px = Math.floor((e.clientX - rect.left) * scaleX);
+    const py = Math.floor((e.clientY - rect.top) * scaleY);
+    const n = gridN;
+    const cx = ((px % n) + n) % n;
+    const cy = ((py % n) + n) % n;
+
+    if (labTool === 'probe' || labTool === 'area') {
+        // 放置探测器
+        const probe = { id: probeIdCounter++, x: cx, y: cy, history: [] };
+        probes.push(probe);
+        selectedProbeId = probe.id;
+        const m = measureProbe(cx, cy);
+        addEvent(tick, `◎ 探测器 P${probe.id} 放置于 (${cx},${cy}) — Ψ=${m.density.toFixed(3)}`);
+        updateLabUI();
+    } else if (labTool === 'pulse' || labTool === 'void' || labTool === 'seed' || labTool === 'wall') {
+        // 注入扰动
+        const cnt = injectPerturbation(cx, cy, labTool, injectAmp, injectRadius);
+        const names = { pulse: '信息脉冲', void: '真空洞', seed: '密度种子', wall: '信息墙' };
+        addEvent(tick, `${labTool === 'pulse' ? '✦' : labTool === 'void' ? '○' : labTool === 'seed' ? '★' : '▌'} ${names[labTool]}注入 (${cx},${cy}) 强度=${injectAmp} 半径=${injectRadius} 影响${cnt}单元`, true);
+        updateLabUI();
+    }
+});
+
+// 实验台面板切换
+document.querySelectorAll('.lab-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const target = tab.dataset.labtab;
+        labTab = target;
+        document.querySelectorAll('.lab-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.lab-panel').forEach(p => p.style.display = 'none');
+        document.getElementById('lab-panel-' + target).style.display = '';
+        updateLabUI();
+    });
+});
+
+// 工具切换
+document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const tool = btn.dataset.tool;
+        labTool = tool;
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        // 切换到对应面板
+        if (tool === 'probe' || tool === 'area') {
+            document.getElementById('labtab-probe').click();
+        } else {
+            document.getElementById('labtab-injector').click();
+        }
+    });
+});
+
+// 扰动器参数
+document.getElementById('inject-amp').addEventListener('input', (e) => {
+    injectAmp = parseFloat(e.target.value);
+    document.getElementById('inject-amp-val').textContent = injectAmp.toFixed(1);
+});
+document.getElementById('inject-radius').addEventListener('input', (e) => {
+    injectRadius = parseInt(e.target.value);
+    document.getElementById('inject-radius-val').textContent = injectRadius;
+});
+
+// 清除扰动（恢复场到无扰动状态不可行，但可以清除探测器）
+document.getElementById('btn-clear-inject').addEventListener('click', () => {
+    // 实际上扰动已经融入场演化，这里清除探测器
+    probes = [];
+    selectedProbeId = -1;
+    addEvent(tick, '清除所有探测器');
+    updateLabUI();
+});
+
+// 探测器列表点击（事件委托）
+document.getElementById('probe-list').addEventListener('click', (e) => {
+    const delEl = e.target.closest('[data-del-id]');
+    if (delEl) {
+        const id = parseInt(delEl.dataset.delId);
+        probes = probes.filter(p => p.id !== id);
+        if (selectedProbeId === id) selectedProbeId = probes.length > 0 ? probes[0].id : -1;
+        updateLabUI();
+        return;
+    }
+    const item = e.target.closest('[data-probe-id]');
+    if (item) {
+        selectedProbeId = parseInt(item.dataset.probeId);
+        updateLabUI();
+    }
+});
 
 // ============================================================
 //  启动
