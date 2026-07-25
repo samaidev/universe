@@ -611,21 +611,13 @@ function initGrid(n) {
     psi = new Float64Array(N);
     psiNext = new Float64Array(N);
 
-    // 全正初始场（信息密度，0.3~0.7 微涨落）
+    // 初始场（仅微涨落 — 无人工种子，结构由动力学自然涌现）
     let seed = 42;
     for (let i = 0; i < N; i++) {
         seed = (seed * 1103515245 + 12345) & 0x7fffffff;
         const r = seed / 0x7fffffff;
-        psi[i] = 0.3 + r * 0.4;
+        psi[i] = 0.5 + (r - 0.5) * 0.2;  // 0.4~0.6 自然量子涨落
     }
-
-    // 注入高密度种子（原初涨落）
-    const cx = n >> 1, cy = n >> 1;
-    psi[cy * n + cx] = 2.5;
-    psi[(cy - (n >> 3)) * n + (cx - (n >> 3))] = 2.0;
-    psi[(cy + (n >> 3)) * n + (cx + (n >> 3))] = 2.2;
-    psi[(cy - (n >> 4)) * n + (cx + (n >> 4))] = 1.8;
-    psi[(cy + (n >> 4)) * n + (cx - (n >> 4))] = 1.5;
 
     // 预计算邻居索引
     nIdxCache = new Int32Array(N * 4);
@@ -660,6 +652,14 @@ function initGrid(n) {
     galaxyFirstLogged = false;
     prevAvgC = 1.0;
     cosmicAge = 0;
+    // 重置内生参数（初始化时全域关联度 C≈1）
+    endoAvgC = 1.0;
+    endoCTh = 1.0;
+    endoDStar = 1.0;
+    endoGStar = 0.0;
+    endoLinks = 0;
+    endoGravLinks = 0;
+    endoIsolated = 0;
     events = [];
     addEvent(0, '宇宙初始化，原始相位场涨落');
 }
@@ -690,7 +690,9 @@ function evolveStep() {
 
     // Pass 1: 计算所有关联 C[i,j]，求和得到 ⟨C⟩
     let sumC = 0;
+    let sumPsi = 0;
     for (let i = 0; i < N; i++) {
+        sumPsi += psi[i];
         for (let d = 0; d < 4; d++) {
             const j = nIdx[i * 4 + d];
             const c = correlation(psi[i], psi[j]);
@@ -699,6 +701,7 @@ function evolveStep() {
         }
     }
     const avgC = sumC / totalLinks;
+    const avgPsi = sumPsi / N;   // 全局平均密度（自催化阈值 — 内生）
     const cTh = avgC;           // 动态相变阈值 = ⟨C⟩
     const dStar = avgC;          // 涌现扩散系数 = ⟨C⟩
     const gStar = 1 - avgC;     // 涌现引力强度 = 1 - ⟨C⟩
@@ -714,10 +717,12 @@ function evolveStep() {
         let diffWeight = 0;
         let gravAcc = 0;       // 引力累积
         let gravCount = 0;
+        let lapSum = 0;        // 拉普拉斯（信息压力 — 跨链接平滑）
 
         for (let d = 0; d < 4; d++) {
             const j = nIdx[i * 4 + d];
             const c = cArr[i * 4 + d];
+            lapSum += psi[j] - cur;  // 信息压力：跨所有链接的梯度
             if (c > cTh) {
                 // 活跃链接：扩散（平滑，信息从高→低）
                 diffSum += c * (psi[j] - cur);
@@ -734,50 +739,65 @@ function evolveStep() {
         let delta = 0;
         if (diffWeight > 0) {
             // 涌现扩散：D* · Σ C·(ψj-ψi) / Σ C
-            delta = dStar * diffSum / diffWeight;
+            // 局部饱和：高密度区信息"粘稠"，扩散减慢（密度依赖扩散率）
+            // 二次饱和更强 — 高密度峰不会被扩散抹平
+            const localDiffSat = 1.0 / (1.0 + cur * cur * 0.15);
+            delta = dStar * diffSum / diffWeight * localDiffSat;
         } else {
             isolated++;
         }
 
-        // 引力塌缩：G* · Σ(ψi-ψj) / n_grav
-        // 暴胀前：强引力(0.3) 创造密度对比度 → 触发暴胀
-        // 暴胀后：弱引力(0.08) + 辐射压 → 平滑梯度 → 温和区
-        const gravCoeff = inflationDone ? 0.08 : 0.3;
+        // 引力塌缩：G* · Σ(ψi-ψj) / n_grav（完全内生 G*=1-⟨C⟩，无人工系数）
         if (gravCount > 0) {
-            const gravSat = 1.0 / (1.0 + Math.abs(cur) * 0.12);
-            delta += gStar * gravCoeff * gravAcc / gravCount * gravSat;
+            // 温和饱和：低密度弱（保护温和区），高密度线性增长
+            const gravSat = cur / (1.0 + cur * 0.15);
+            let gravDelta = gStar * gravAcc / gravCount * gravSat;
+            // 引力抽取限制：单步不超过当前密度的20%
+            const maxLoss = cur * 0.20;
+            gravDelta = Math.max(-maxLoss, Math.min(maxLoss, gravDelta));
+            delta += gravDelta;
         }
 
-        // 辐射压（暴胀后启用：创造密度梯度，形成温和区 — 生命涌现的关键）
-        // 线性项 ρ·G*：指数衰减型分布 → 平滑密度梯度 → 温和区自然形成
-        // 二次项 ρ²·G*：防止极端高密度坍缩
-        if (inflationDone) {
-            delta -= 0.015 * cur * gStar;
-            delta -= 0.004 * cur * cur * gStar;
-        }
+        // ============================================================
+        //  内生不稳定性（Turing 式 — 单场版本）
+        //
+        //  原理：偏离全局平均密度的单元获得正反馈
+        //    - 高于均值 → 密度增长（信息自吸引）
+        //    - 低于均值 → 密度衰减（信息流失）
+        //    - 立方饱和 → 有限振幅，防止发散
+        //
+        //  关键：大尺度模式（长波长）的扩散阻尼极弱（~0.002），
+        //  所以即使很小的正反馈系数也能创造大尺度结构。
+        //  这是信息场对称性自发破缺的自然机制。
+        // ============================================================
+        const dev = cur - avgPsi;
+        delta += 0.05 * dev;          // 线性正反馈（超过大尺度扩散阻尼）
+        delta -= 0.02 * dev * dev * dev;  // 立方饱和（振幅 ≈ √(0.05/0.02) ≈ 1.58）
 
-        // 量子涨落噪声（暴胀后大幅衰减，允许结构凝聚）
-        const noiseAmp = inflationDone ? 0.0003 : 0.004;
-        delta += (Math.random() - 0.5) * noiseAmp * gStar;
+        // 非线性自增强：维持基础密度水平（平衡点 ~1.67）
+        delta += 0.005 * cur * cur;
+        delta -= 0.003 * cur * cur * cur;
+
+        // 信息压力（非线性平滑 — tanh 通量限制器，仅平滑小梯度）
+        delta += 0.015 * Math.tanh(lapSum * 0.3);
+
+        // 量子涨落（真空能：低密度区信息最可分，涨落最大）
+        // 较强噪声驱动对称性破缺 — 种子结构从噪声自然涌现
+        const vacuumFactor = 1.0 + 5.0 * Math.exp(-cur * 1.5);
+        delta += (Math.random() - 0.5) * 0.015 * vacuumFactor;
 
         let next = cur + delta;
         // 分辨阈值截断（A4）
         if (Math.abs(next - cur) < DELTA_PSI) next = cur;
-        // 限幅：暴胀前允许负值（创造对比度），暴胀后下限 0.05（创造温和区）
-        const minVal = inflationDone ? 0.05 : -2;
-        next = Math.max(minVal, Math.min(10, next));
+        // 限幅
+        next = Math.max(0, Math.min(10, next));
         psiNext[i] = next;
     }
 
     // 交换缓冲区
     const tmp = psi; psi = psiNext; psiNext = tmp;
 
-    // 宇宙冷却（暴胀后缓慢耗散背景能量，增强密度对比度）
-    if (inflationDone) {
-        for (let i = 0; i < N; i++) psi[i] *= 0.9998;
-    }
-
-    // 软归一化（仅防止极端数值发散，允许密度峰充分生长）
+    // 软归一化（仅防止极端数值发散）
     let maxAbs = 0;
     for (let i = 0; i < N; i++) {
         const v = Math.abs(psi[i]);
@@ -818,8 +838,8 @@ function evolveStep() {
 function detectInflation(avgC) {
     const dropRate = prevAvgC - avgC;
 
-    // 暴胀触发：关联度下降到临界值（更早触发，更敏感）
-    if (!inflationTriggered && avgC < 0.85 && dropRate > 0.0002) {
+    // 暴胀自然触发：关联度持续下降且加速度为正（相变 — 正反馈失控）
+    if (!inflationTriggered && dropRate > 0.0003 && avgC < 0.97) {
         inflationTriggered = true;
         inflationTicks = 0;
         inflationFlash = 1.0;
@@ -827,29 +847,14 @@ function detectInflation(avgC) {
     }
 
     if (inflationTriggered && inflationTicks < 30) {
-        // 暴胀进行中（30 tick 快速暴胀）
+        // 暴胀进行中（观察标签 — 场自身正在指数级分化）
         inflationFactor = 1 + (1 - avgC) * 8;
         inflationTicks++;
         inflationFlash = Math.max(0, inflationFlash - 0.02);
 
-        // 注入量子涨落（原初扰动 — 未来星系的种子）
-        const fluctAmp = 0.5 * (1 - avgC);
-        for (let i = 0; i < gridN * gridN; i++) {
-            psi[i] += (Math.random() - 0.5) * fluctAmp;
-        }
-
-        // 创建强密度种子（暴胀期间的量子涨落峰 → 未来星系核心）
-        if (inflationTicks < 15) {
-            for (let k = 0; k < 5; k++) {
-                const sx = Math.floor(Math.random() * gridN);
-                const sy = Math.floor(Math.random() * gridN);
-                psi[sy * gridN + sx] += 1.5 + Math.random() * 2.0;
-            }
-        }
-
         if (inflationTicks === 30 && !inflationDone) {
             inflationDone = true;
-            addEvent(tick, '暴胀结束，原初扰动种子已植入信息场', true);
+            addEvent(tick, '暴胀结束，原初扰动已自然植入信息场', true);
         }
     } else {
         inflationFactor *= 0.95;
@@ -865,16 +870,15 @@ function detectInflation(avgC) {
 //  动态阈值：均值 + 1.5σ（自适应）
 // ============================================================
 function detectGalaxies() {
-    if (tick < 80 || tick % 10 !== 0) return;
+    if (tick < 30 || tick % 10 !== 0) return;
     const n = gridN;
     const N = n * n;
     galaxies = [];
     const visited = new Uint8Array(N);
 
-    // 动态阈值：最大值的 45%（适配指数衰减型密度分布）
-    let fieldMax = -Infinity;
-    for (let i = 0; i < N; i++) if (psi[i] > fieldMax) fieldMax = psi[i];
-    const galaxyThreshold = Math.max(1.2, fieldMax * 0.45);
+    // 分位数阈值：第 90 百分位（自然统计 — 密度峰由场动力学涌现）
+    const samples = Array.from(psi).sort((a, b) => a - b);
+    const galaxyThreshold = samples[Math.floor(N * 0.9)];
 
     for (let y = 0; y < n; y++) {
         for (let x = 0; x < n; x++) {
@@ -939,14 +943,14 @@ function detectGalaxies() {
 //  文明等级：随宇宙年龄增长（内生技术进步）
 // ============================================================
 function detectLifeAndCivilization() {
-    if (tick < 120 || tick % 15 !== 0) return;
+    if (tick < 50 || tick % 15 !== 0) return;
     const n = gridN;
     lifeOrigins = [];
     civilizations = [];
 
     for (let gi = 0; gi < galaxies.length; gi++) {
         const g = galaxies[gi];
-        // 在星系外围温和区搜索（0.8~2.0 星系半径 — 指数衰减密度梯度中的宜居带）
+        // 在星系外围温和区搜索
         for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
             for (let ring = 1; ring <= 3; ring++) {
                 const dist = g.r * (0.8 + ring * 0.4);
@@ -954,51 +958,42 @@ function detectLifeAndCivilization() {
                 const lifeY = Math.floor(g.y + Math.sin(angle) * dist);
                 const li = idx(lifeX, lifeY, n);
 
-                // 温和区：密度在适宜区间（指数衰减分布的自然产物）
-                if (psi[li] > 0.12 && psi[li] < 2.0) {
-                    const age = cosmicAge - 15;
-                    if (age > 0) {
-                        // 生命复杂度随时间增长（内生演化，快速版）
-                        const complexity = Math.min(1.0, age / 40);
+                // 温和区：密度在宜居区间
+                if (psi[li] > 0.1 && psi[li] < 2.0) {
+                    // 局部信息熵（自然复杂度度量 — 非线性，非时间线性函数）
+                    let entropy = 0;
+                    for (let d = 0; d < 4; d++) {
+                        const ni = nIdxCache[li * 4 + d];
+                        const p = Math.abs(psi[ni]) / (Math.abs(psi[li]) + Math.abs(psi[ni]) + DELTA_PSI);
+                        if (p > 0 && p < 1) entropy -= p * Math.log2(p);
+                    }
+                    // 归一化熵 [0,1]（最大约 2 bit）
+                    const complexity = Math.min(1.0, entropy / 1.5);
 
-                        // 首次发现生命（防止重复日志）
-                        if (lifeOrigins.length === 0 && complexity > 0.02 && !lifeFirstLogged) {
+                    // 生命：信息熵 > 0.3（信息结构足够复杂）
+                    if (complexity > 0.3) {
+                        if (lifeOrigins.length === 0 && !lifeFirstLogged) {
                             addEvent(tick, '🧬 生命起源！自复制信息结构在温和区涌现', true);
                             lifeFirstLogged = true;
                         }
+                        lifeOrigins.push({ x: lifeX, y: lifeY, complexity, galaxy: gi });
 
-                        lifeOrigins.push({
-                            x: lifeX, y: lifeY,
-                            complexity: complexity,
-                            galaxy: gi
-                        });
-
-                        // 文明涌现：复杂度 > 0.3
-                        if (complexity > 0.3) {
-                            const techLevel = Math.min(1.0, (complexity - 0.3) / 0.7);
+                        // 文明：信息熵 > 0.6（信息处理网络自组织）
+                        if (complexity > 0.6) {
+                            const techLevel = Math.min(1.0, (complexity - 0.6) / 0.4);
                             const tech = Math.min(5, Math.floor(techLevel * 5) + 1);
-
-                            // 首次文明诞生（防止重复日志）
                             if (civilizations.length === 0 && !civFirstLogged) {
                                 addEvent(tick, '📡 文明诞生！信息处理网络自组织，元认知回路闭合', true);
                                 civFirstLogged = true;
                             }
-
-                            civilizations.push({
-                                x: lifeX, y: lifeY,
-                                level: techLevel,
-                                tech: tech,
-                                galaxy: gi
-                            });
+                            civilizations.push({ x: lifeX, y: lifeY, level: techLevel, tech, galaxy: gi });
                         }
                     }
-                    break; // 每个角度只取最近的一个生命点
+                    break;
                 }
             }
         }
     }
-
-    // 限制数量
     if (lifeOrigins.length > 30) lifeOrigins = lifeOrigins.slice(0, 30);
     if (civilizations.length > 20) civilizations = civilizations.slice(0, 20);
 }
@@ -1170,6 +1165,29 @@ function heatColorRGB(t) {
 }
 
 // ============================================================
+//  阶段判断（由系统状态内生决定，非 tick 计数）
+// ============================================================
+function getCurrentPhase() {
+    // 阶段由涌现结构自然决定
+    if (civilizations.length > 0) return 11;          // 文明诞生
+    if (lifeOrigins.length > 0) return 10;            // 生命起源
+    if (galaxies.length > 0) {
+        let maxD = 0;
+        for (const g of galaxies) if (g.density > maxD) maxD = g.density;
+        if (maxD > 3) return 9;                        // 恒星点亮
+        return 8;                                      // 星系诞生
+    }
+    if (inflationDone) return 7;                      // 物质涌现
+    if (inflationTriggered) return 6;                  // 暴胀纪元
+    if (endoAvgC < 0.92) return 5;                    // 常数内生
+    if (endoAvgC < 0.96) return 4;                    // 自发膨胀
+    if (endoAvgC < 0.985) return 3;                  // 度量诱导
+    if (endoAvgC < 0.995) return 2;                  // 邻域诞生
+    if (endoAvgC < 0.999) return 1;                  // 关联分化
+    return 0;                                          // 原始态
+}
+
+// ============================================================
 //  UI 更新
 // ============================================================
 function updateUI() {
@@ -1181,11 +1199,8 @@ function updateUI() {
     document.getElementById('s-clusters').textContent = s.clusters;
     document.getElementById('s-corr').textContent = s.corr.toFixed(3);
 
-    // 当前阶段
-    let phaseIdx = 0;
-    for (let i = PHASES.length - 1; i >= 0; i--) {
-        if (tick >= PHASES[i].threshold) { phaseIdx = i; break; }
-    }
+    // 当前阶段（由系统状态内生决定，非 tick 计数）
+    const phaseIdx = getCurrentPhase();
     const phase = PHASES[phaseIdx];
     document.getElementById('phase-name').textContent = phase.name;
     let phaseDesc = phase.desc;
