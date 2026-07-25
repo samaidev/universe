@@ -33,9 +33,9 @@ l_P = √(h·G/c³)                       (普朗克尺度涌现)
 
 浮点舍入噪声不能超过宇宙本身能识别的最小信息差。不满足则仿真失效。
 
-## 十五大物理难题实验
+## 二十大物理难题实验
 
-本引擎用同一个内生信息宇宙引擎，不引入任何外部物理常数，解释十五大物理难题：
+本引擎用同一个内生信息宇宙引擎，不引入任何外部物理常数，解释二十大物理难题：
 
 | # | 物理难题 | 核心数据 | 判定 |
 |---|---|---|---|
@@ -54,8 +54,13 @@ l_P = √(h·G/c³)                       (普朗克尺度涌现)
 | 13 | 物质-反物质不对称 | 4/5运行物质占优, sat函数CP破缺 | 成立 |
 | 14 | 宇宙暴胀 | 暴胀7步→再加热9步, ⟨C⟩急降 | 成立 |
 | 15 | 引力波 | 扰动传播44格, 速度=c*=⟨C⟩(待验证) | 部分成立 |
+| 16 | 黑洞熵/全息原理 | Σ/B=4248(N=64), 边界信息编码 | 部分成立 |
+| 17 | 量子退相干 | 微观1步/宏观2步, 比值2.33 | 成立 |
+| 18 | CMB均匀性 | 早期偏差8.93e-4, ⟨C⟩≈1全局关联 | 成立 |
+| 19 | 时空维度 | 3D(6邻居)复杂度761.3最优 | 成立 |
+| 20 | 宇宙命运 | ⟨C⟩稳定0.717, 熵增→热寂 | 成立 |
 
-**总计：12个成立，3个部分成立。** 所有解释均从信息关联度⟨C⟩的动力学中自然涌现。
+**总计：16个成立，4个部分成立。** 所有解释均从信息关联度⟨C⟩的动力学中自然涌现。
 
 ## 编译与运行
 
@@ -76,6 +81,7 @@ make clean      # 清理
 cd 代码仓
 node physics_experiments_v3.js      # V3: 四大扩展实验(暗能量/纠缠/零点能/隧穿)
 node physics_experiments_v4.js      # V4: 五大扩展实验(大爆炸/测量/物质-反物质/暴胀/引力波)
+node physics_experiments_v5.js      # V5: 五大扩展实验(全息/退相干/CMB/维度/宇宙命运)
 node bug_audit.js                    # 黑洞信息守恒审计
 node darkmatter_audit.js             # 暗物质网格尺寸审计
 node waveparticle_audit.js           # 波粒二象干涉验证
@@ -121,6 +127,7 @@ universe/
 │   ├── physics_experiments_v2.js   V2: 改进版
 │   ├── physics_experiments_v3.js   V3: 四大扩展实验(暗能量/纠缠/零点能/隧穿)
 │   ├── physics_experiments_v4.js   V4: 五大扩展实验(大爆炸/测量/物质-反物质/暴胀/引力波)
+│   ├── physics_experiments_v5.js   V5: 五大扩展实验(全息/退相干/CMB/维度/宇宙命运)
 │   ├── bug_audit.js               黑洞信息守恒bug审计
 │   ├── darkmatter_audit.js         暗物质网格尺寸审计
 │   ├── waveparticle_audit.js       波粒二象干涉验证
@@ -134,6 +141,7 @@ universe/
 ├── physics_experiments.html  六大基础实验报告
 ├── physics_experiments_extended.html  四大扩展实验报告(V3)
 ├── physics_experiments_v4.html  五大扩展实验报告(V4)
+├── physics_experiments_v5.html  五大扩展实验报告(V5)
 ├── physics_rigorous_audit.html  严谨化修正报告(四轮审计)
 ├── Makefile
 ├── push.sh
@@ -169,6 +177,7 @@ k_t = k_x  (固定光速)
 - [六大基础实验报告](physics_experiments.html) — 黑洞/视界/熵增/波粒/不确定性/暗物质
 - [四大扩展实验报告(V3)](physics_experiments_extended.html) — 暗能量/量子纠缠/真空零点能/量子隧穿
 - [五大扩展实验报告(V4)](physics_experiments_v4.html) — 宇宙起源/量子测量/物质-反物质/宇宙暴胀/引力波
+- [五大扩展实验报告(V5)](physics_experiments_v5.html) — 全息原理/量子退相干/CMB均匀性/时空维度/宇宙命运
 - [严谨化修正报告](physics_rigorous_audit.html) — 四轮审计与极限压力测试
 
 ## 许可

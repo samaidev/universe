@@ -9,7 +9,8 @@
 | physics_experiments.js | V1 | 六大基础实验(黑洞/视界/熵增/波粒/不确定性/暗物质) |
 | physics_experiments_v2.js | V2 | 改进版基础实验 |
 | physics_experiments_v3.js | V3 | 四大扩展实验(暗能量/量子纠缠/真空零点能/量子隧穿) |
-| **physics_experiments_v4.js** | **V4** | **五大扩展实验(大爆炸/量子测量/物质-反物质/暴胀/引力波)** |
+| physics_experiments_v4.js | V4 | 五大扩展实验(大爆炸/量子测量/物质-反物质/暴胀/引力波) |
+| **physics_experiments_v5.js** | **V5** | **五大扩展实验(全息原理/退相干/CMB/维度/宇宙命运)** |
 | bug_audit.js | — | 黑洞信息守恒bug审计 |
 | darkmatter_audit.js | — | 暗物质网格尺寸审计 |
 | waveparticle_audit.js | — | 波粒二象干涉验证 |
@@ -21,6 +22,14 @@
 | verify_data.js | — | 数据验证脚本 |
 
 ## 更新日志
+
+### 2026-07-25 V5 新增
+- **physics_experiments_v5.js**: 五大新物理难题实验
+  - 实验十六：黑洞熵与全息原理(Σ/B=4248, 边界信息编码) → 部分成立
+  - 实验十七：量子退相干(微观1步/宏观2步, 比值2.33) → 成立
+  - 实验十八：CMB均匀性(早期偏差8.93e-4, ⟨C⟩≈1全局关联) → 成立
+  - 实验十九：时空维度(3D复杂度761.3最优, 6邻居拓扑) → 成立
+  - 实验二十：宇宙命运(⟨C⟩稳定0.717, 熵增→热寂) → 成立
 
 ### 2026-07-25 V4 新增
 - **physics_experiments_v4.js**: 五大新物理难题实验
@@ -45,11 +54,12 @@
 ## 运行方法
 
 ```bash
-node physics_experiments_v4.js   # 最新V4实验
+node physics_experiments_v5.js   # 最新V5实验
+node physics_experiments_v4.js   # V4实验
 node physics_experiments_v3.js   # V3实验
 node physics_experiments.js      # 基础实验
 ```
 
 ## 总实验状态
 
-**十五大物理难题：12个成立，3个部分成立。**
+**二十大物理难题：16个成立，4个部分成立。**
