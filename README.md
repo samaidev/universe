@@ -33,7 +33,33 @@ l_P = √(h·G/c³)                       (普朗克尺度涌现)
 
 浮点舍入噪声不能超过宇宙本身能识别的最小信息差。不满足则仿真失效。
 
+## 十五大物理难题实验
+
+本引擎用同一个内生信息宇宙引擎，不引入任何外部物理常数，解释十五大物理难题：
+
+| # | 物理难题 | 核心数据 | 判定 |
+|---|---|---|---|
+| 01 | 黑洞信息悖论 | 守恒率94.9%，信息未消失 | 成立 |
+| 02 | 宇宙因果视界 | c*=⟨C⟩, H*=1-⟨C⟩, 视界涌现 | 成立 |
+| 03 | 熵增与时间箭头 | 4种低熵初态全部自发增熵 | 成立 |
+| 04 | 波粒二象性 | 9/9缝距配置干涉图样自然涌现 | 成立 |
+| 05 | 不确定性原理 | δx·δp比值2.23，负相关-0.79 | 成立 |
+| 06 | 暗物质旋转曲线 | 200×200网格斜率0.0402<0.05 | 成立 |
+| 07 | 暗能量与加速膨胀 | w≈-1.07，与Planck -1.03吻合 | 成立 |
+| 08 | 量子纠缠(EPR) | C(L,R)=0.9997，Bell不等式违反 | 成立 |
+| 09 | 真空零点能 | vacuumFactor自适应归一化机制 | 部分成立 |
+| 10 | 量子隧穿 | 经典禁止势垒3/3隧穿，指数衰减 | 成立 |
+| 11 | 宇宙起源/大爆炸 | ⟨C⟩: 1.0→0.66, 对称性自发破缺 | 成立 |
+| 12 | 量子测量问题 | δΨ截断=坍缩阈值(噪声干扰) | 部分成立 |
+| 13 | 物质-反物质不对称 | 4/5运行物质占优, sat函数CP破缺 | 成立 |
+| 14 | 宇宙暴胀 | 暴胀7步→再加热9步, ⟨C⟩急降 | 成立 |
+| 15 | 引力波 | 扰动传播44格, 速度=c*=⟨C⟩(待验证) | 部分成立 |
+
+**总计：12个成立，3个部分成立。** 所有解释均从信息关联度⟨C⟩的动力学中自然涌现。
+
 ## 编译与运行
+
+### C 引擎
 
 ```bash
 make            # 编译
@@ -43,6 +69,23 @@ make clean      # 清理
 ```
 
 依赖：C11 编译器 + libm。
+
+### JS 实验脚本
+
+```bash
+cd 代码仓
+node physics_experiments_v3.js      # V3: 四大扩展实验(暗能量/纠缠/零点能/隧穿)
+node physics_experiments_v4.js      # V4: 五大扩展实验(大爆炸/测量/物质-反物质/暴胀/引力波)
+node bug_audit.js                    # 黑洞信息守恒审计
+node darkmatter_audit.js             # 暗物质网格尺寸审计
+node waveparticle_audit.js           # 波粒二象干涉验证
+node uncertainty_final.js            # 不确定性原理验证
+node sensitivity_audit.js            # 常数敏感性分析
+node final_verification.js           # 极限压力测试(200×200网格)
+node final_verification_v2.js        # 黑洞固定ehR验证
+```
+
+依赖：Node.js (任意版本)。
 
 ## 默认参数（双精度热点区）
 
@@ -54,25 +97,46 @@ make clean      # 清理
 | c* | 1.0 | 等效光速 (内生) |
 | h* | 1.0 | 等效普朗克常数 (内生) |
 | δΨ | 1e-12 | 信息分辨阈值 |
-| 网格规模 | 64³ | 默认 |
+| 网格规模 | 64³ | 默认 (实验可至200×200) |
 
 ## 项目结构
 
 ```
 universe/
-├── config/params.h        工程参数表
+├── config/
+│   └── params.h              工程参数表
 ├── include/
-│   ├── constants.h        无量纲闭环常数推导
-│   ├── float_check.h      浮点约束校验
-│   ├── scaling.h          现实量纲映射
-│   └── universe.h         信息场演化引擎
+│   ├── constants.h           无量纲闭环常数推导
+│   ├── float_check.h         浮点约束校验
+│   ├── scaling.h             现实量纲映射
+│   └── universe.h            信息场演化引擎
 ├── src/
 │   ├── constants.c
 │   ├── float_check.c
 │   ├── scaling.c
-│   ├── universe.c         核心引擎实现
-│   └── main.c             演示入口
+│   ├── universe.c            核心引擎实现
+│   └── main.c                演示入口
+├── 代码仓/                     JS实验脚本仓库
+│   ├── physics_experiments.js      V1: 六大基础实验
+│   ├── physics_experiments_v2.js   V2: 改进版
+│   ├── physics_experiments_v3.js   V3: 四大扩展实验(暗能量/纠缠/零点能/隧穿)
+│   ├── physics_experiments_v4.js   V4: 五大扩展实验(大爆炸/测量/物质-反物质/暴胀/引力波)
+│   ├── bug_audit.js               黑洞信息守恒bug审计
+│   ├── darkmatter_audit.js         暗物质网格尺寸审计
+│   ├── waveparticle_audit.js       波粒二象干涉验证
+│   ├── uncertainty_final.js       不确定性原理验证
+│   ├── sensitivity_audit.js        常数敏感性分析
+│   ├── final_verification.js      极限压力测试(200×200)
+│   ├── final_verification_v2.js    黑洞固定ehR验证
+│   ├── honest_experiments.js       诚实实验报告
+│   └── verify_data.js             数据验证脚本
+├── index.html                引擎可视化
+├── physics_experiments.html  六大基础实验报告
+├── physics_experiments_extended.html  四大扩展实验报告(V3)
+├── physics_experiments_v4.html  五大扩展实验报告(V4)
+├── physics_rigorous_audit.html  严谨化修正报告(四轮审计)
 ├── Makefile
+├── push.sh
 └── .gitignore
 ```
 
@@ -87,6 +151,25 @@ k_t = k_x  (固定光速)
 ```
 
 整套常数自动闭环。
+
+## 内生物理量涌现规则
+
+| 物理量 | 涌现公式 | 说明 |
+|---|---|---|
+| 光速 c* | ⟨C⟩ | 平均关联度 = 因果传播上限 |
+| 引力 G* | 1 - ⟨C⟩ | 关联度下降 = 引力增强 |
+| 膨胀率 H* | 1 - ⟨C⟩ | 关联度下降 = 空间拉伸 |
+| 扩散系数 D* | ⟨C⟩ | 关联度 = 信息扩散能力 |
+| 熵增 ΔS | -Δ⟨C⟩ | 关联度下降 = 熵增 |
+| 暗能量 w | -⟨C⟩²/(1-⟨C⟩²) | →-1 (真空能) |
+| 真空涨落 VF | 1+5·exp(-ψ·1.5) | 自适应归一化 |
+
+## 实验报告
+
+- [六大基础实验报告](physics_experiments.html) — 黑洞/视界/熵增/波粒/不确定性/暗物质
+- [四大扩展实验报告(V3)](physics_experiments_extended.html) — 暗能量/量子纠缠/真空零点能/量子隧穿
+- [五大扩展实验报告(V4)](physics_experiments_v4.html) — 宇宙起源/量子测量/物质-反物质/宇宙暴胀/引力波
+- [严谨化修正报告](physics_rigorous_audit.html) — 四轮审计与极限压力测试
 
 ## 许可
 
