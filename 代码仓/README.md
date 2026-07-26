@@ -31,7 +31,9 @@
 │   └── verify_basefield.js             # baseField = D×e 验证
 ├── 双线推导/           # A-B双线并行: 量子力学还原 + 可证伪预言
 │   ├── route_A_born_emergence.js        # ★★★★★★★ 路线A: 玻恩定则涌现 (核心突破!)
-│   └── route_B_observational.js         # ★★★★★★★ 路线B: 可证伪观测预言
+│   ├── route_B_observational.js         # ★★★★★★★ 路线B: 可证伪观测预言
+│   ├── epsilon0_beta_derivation.js      # ★★★★★★★ ε₀与β内生推导 (从拓扑到具体数值!)
+│   └── coupling_ratio_proof.js          # ★★★★★★★★ R=1严格证明 (公理代数推导!)
 ├── 公理体系/           # 东山逻辑一元论完整公理文本
 │   └── axioms.md                       # 完整11公理体系
 └── archive/            # 归档
