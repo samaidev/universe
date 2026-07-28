@@ -92,9 +92,10 @@ node final_verification_v2.js        # 黑洞固定ehR验证
 
 # 万有理论 (Theory of Everything)
 cd 万有理论
-node theory_of_everything.js          # Part 1-6: 11公理→规范群/粒子谱/常数推导
+node theory_of_everything.js          # Part 1-7: 11公理→规范群/粒子谱/常数/全域决定论
 node toe_completion.js                # Part 7-16: BD引力/暴胀/CKM/中微子/GUT统一
 node toe_true_completion.js           # Part 30-36: C₀公理推导/色禁闭/αs修正/16条预言
+node determinism_analysis.js          # 全域决定论+局部不可预测三重保证+宿命论排除
 ```
 
 依赖：Node.js (任意版本)。
@@ -144,10 +145,11 @@ universe/
 │   ├── honest_experiments.js       诚实实验报告
 │   └── verify_data.js             数据验证脚本
 ├── 代码仓/万有理论/                万有理论(Theory of Everything)推导
-│   ├── theory_of_everything.js         Part 1-6: 11公理体系→SM规范群/粒子谱/常数
+│   ├── theory_of_everything.js         Part 1-7: 11公理体系→SM规范群/粒子谱/常数/全域决定论
 │   ├── toe_completion.js               Part 7-16: BD引力/暴胀/味矩阵/中微子/GUT
 │   ├── kakeya_methods_application.js   Kakeya方法应用于拓扑信息论
-│   └── toe_true_completion.js          Part 30-36: C₀公理推导/色禁闭/16条预言(99%完备)
+│   ├── toe_true_completion.js          Part 30-36: C₀公理推导/色禁闭/16条预言(99%完备)
+│   └── determinism_analysis.js         全域决定论+局部不可预测三重保证+宿命论排除
 ├── index.html                引擎可视化
 ├── physics_experiments.html  六大基础实验报告
 ├── physics_experiments_extended.html  四大扩展实验报告(V3)
@@ -194,6 +196,8 @@ k_t = k_x  (固定光速)
 ## 万有理论 (Theory of Everything)
 
 基于11条逻辑公理，从零实验输入推导全部物理学。完备性达99%，16条可证伪预言（4条已验证）。
+
+**理论立场**: 全域决定论（定理6）—— 连续态必然决定一切（A1+A4+A6反证法），表观随机来自连续→离散截断（认识论的，非本体论的），局部不可预测有三重独立保证（截断+哥德尔+计算不可还原），宿命论被排除。
 
 ### 公理体系 (11公理)
 
@@ -246,10 +250,11 @@ k_t = k_x  (固定光速)
 
 | 文件 | 内容 | 完备性贡献 |
 |---|---|---|
-| `theory_of_everything.js` | Part 1-6: 公理→规范群/粒子谱/常数 | 60% |
+| `theory_of_everything.js` | Part 1-7: 公理→规范群/粒子谱/常数/全域决定论 | 60% |
 | `toe_completion.js` | Part 7-16: BD引力/暴胀/CKM/中微子/GUT | 85% |
 | `kakeya_methods_application.js` | Kakeya方法→拓扑稳定性 | 90% |
 | `toe_true_completion.js` | Part 30-36: C₀公理推导/色禁闭/αs/预言 | **99%** |
+| `determinism_analysis.js` | 全域决定论+局部不可预测三重保证+宿命论排除 | 理论立场 |
 
 ## 许可
 
