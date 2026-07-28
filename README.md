@@ -97,6 +97,7 @@ node toe_completion.js                # Part 7-16: BD引力/暴胀/CKM/中微子
 node toe_true_completion.js           # Part 30-36: C₀公理推导/色禁闭/αs修正/16条预言
 node determinism_analysis.js          # 全域决定论+局部不可预测三重保证+宿命论排除
 node collapse_as_truncation.js        # 坍缩≡信息截断严格证明+5条物理截断条件
+node free_will_analysis.js            # 自由意志分析:决定论+不可预测→选择真实而非自由+定理7
 ```
 
 依赖：Node.js (任意版本)。
@@ -151,7 +152,8 @@ universe/
 │   ├── kakeya_methods_application.js   Kakeya方法应用于拓扑信息论
 │   ├── toe_true_completion.js          Part 30-36: C₀公理推导/色禁闭/16条预言(99%完备)
 │   ├── determinism_analysis.js         全域决定论+局部不可预测三重保证+宿命论排除
-│   └── collapse_as_truncation.js       坍缩≡信息截断严格证明+5条物理截断条件
+│   ├── collapse_as_truncation.js       坍缩≡信息截断严格证明+5条物理截断条件
+│   └── free_will_analysis.js           自由意志分析:决定论+不可预测→选择真实而非自由(定理7)
 ├── index.html                引擎可视化
 ├── physics_experiments.html  六大基础实验报告
 ├── physics_experiments_extended.html  四大扩展实验报告(V3)
@@ -199,7 +201,7 @@ k_t = k_x  (固定光速)
 
 基于11条逻辑公理，从零实验输入推导全部物理学。完备性达99%，16条可证伪预言（4条已验证）。
 
-**理论立场**: 全域决定论（定理6）—— 连续态必然决定一切（A1+A4+A6反证法），表观随机来自连续→离散截断（认识论的，非本体论的），局部不可预测有三重独立保证（截断+哥德尔+计算不可还原），宿命论被排除。
+**理论立场**: 全域决定论（定理6）—— 连续态必然决定一切（A1+A4+A6反证法），表观随机来自连续→离散截断（认识论的，非本体论的），局部不可预测有三重独立保证（截断+哥德尔+计算不可还原），宿命论被排除。自由意志分析（定理7）—— 严格自由意志不存在（A1+A4+A6），但选择是真实的（不可预测性→非表演），道德责任兼容（基于不可预测性+因果链），第三种立场：决定论✓ + 可预测✗ + 自由意志✗ + 选择真实✓。
 
 ### 公理体系 (11公理)
 
@@ -258,6 +260,7 @@ k_t = k_x  (固定光速)
 | `toe_true_completion.js` | Part 30-36: C₀公理推导/色禁闭/αs/预言 | **99%** |
 | `determinism_analysis.js` | 全域决定论+局部不可预测三重保证+宿命论排除 | 理论立场 |
 | `collapse_as_truncation.js` | 坍缩≡信息截断严格证明+5条物理截断条件+Born从截断涌现 | 测量理论 |
+| `free_will_analysis.js` | 自由意志分析:严格自由意志不存在+选择真实+道德兼容+定理7 | 哲学推论 |
 
 ## 许可
 
