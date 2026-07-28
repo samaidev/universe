@@ -96,6 +96,7 @@ node theory_of_everything.js          # Part 1-7: 11公理→规范群/粒子谱
 node toe_completion.js                # Part 7-16: BD引力/暴胀/CKM/中微子/GUT统一
 node toe_true_completion.js           # Part 30-36: C₀公理推导/色禁闭/αs修正/16条预言
 node determinism_analysis.js          # 全域决定论+局部不可预测三重保证+宿命论排除
+node collapse_as_truncation.js        # 坍缩≡信息截断严格证明+5条物理截断条件
 ```
 
 依赖：Node.js (任意版本)。
@@ -149,7 +150,8 @@ universe/
 │   ├── toe_completion.js               Part 7-16: BD引力/暴胀/味矩阵/中微子/GUT
 │   ├── kakeya_methods_application.js   Kakeya方法应用于拓扑信息论
 │   ├── toe_true_completion.js          Part 30-36: C₀公理推导/色禁闭/16条预言(99%完备)
-│   └── determinism_analysis.js         全域决定论+局部不可预测三重保证+宿命论排除
+│   ├── determinism_analysis.js         全域决定论+局部不可预测三重保证+宿命论排除
+│   └── collapse_as_truncation.js       坍缩≡信息截断严格证明+5条物理截断条件
 ├── index.html                引擎可视化
 ├── physics_experiments.html  六大基础实验报告
 ├── physics_experiments_extended.html  四大扩展实验报告(V3)
@@ -255,6 +257,7 @@ k_t = k_x  (固定光速)
 | `kakeya_methods_application.js` | Kakeya方法→拓扑稳定性 | 90% |
 | `toe_true_completion.js` | Part 30-36: C₀公理推导/色禁闭/αs/预言 | **99%** |
 | `determinism_analysis.js` | 全域决定论+局部不可预测三重保证+宿命论排除 | 理论立场 |
+| `collapse_as_truncation.js` | 坍缩≡信息截断严格证明+5条物理截断条件+Born从截断涌现 | 测量理论 |
 
 ## 许可
 
