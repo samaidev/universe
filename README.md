@@ -94,6 +94,7 @@ node final_verification_v2.js        # 黑洞固定ehR验证
 cd 万有理论
 node theory_of_everything.js          # Part 1-7: 11公理→规范群/粒子谱/常数/全域决定论
 node toe_completion.js                # Part 7-16: BD引力/暴胀/CKM/中微子/GUT统一
+node hilbert6_application.js          # 希尔伯特第六问题方法: 时间箭头/截断控制/介观层/统计可预测
 node toe_true_completion.js           # Part 30-36: C₀公理推导/色禁闭/αs修正/16条预言
 node determinism_analysis.js          # 全域决定论+局部不可预测三重保证+宿命论排除
 node collapse_as_truncation.js        # 坍缩≡信息截断严格证明+5条物理截断条件
@@ -149,7 +150,8 @@ universe/
 ├── 代码仓/万有理论/                万有理论(Theory of Everything)推导
 │   ├── theory_of_everything.js         Part 1-7: 11公理体系→SM规范群/粒子谱/常数/全域决定论
 │   ├── toe_completion.js               Part 7-16: BD引力/暴胀/味矩阵/中微子/GUT
-│   ├── kakeya_methods_application.js   Kakeya方法应用于拓扑信息论
+│   ├── kakeya_methods_application.js   Kakeya方法应用于拓扑信息论 (Wang 2026菲尔兹奖)
+│   ├── hilbert6_application.js         希尔伯特第六问题方法应用 (Deng 2026菲尔兹奖)
 │   ├── toe_true_completion.js          Part 30-36: C₀公理推导/色禁闭/16条预言(99%完备)
 │   ├── determinism_analysis.js         全域决定论+局部不可预测三重保证+宿命论排除
 │   ├── collapse_as_truncation.js       坍缩≡信息截断严格证明+5条物理截断条件
