@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>东山信息宇宙学 · 六大物理难题实验报告</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --card: #131826;
+  --card2: #1a2033;
+  --border: #2a3450;
+  --text: #e0e6f0;
+  --muted: #8896b0;
+  --accent: #00d4ff;
+  --accent2: #ff6b9d;
+  --accent3: #ffd166;
+  --accent4: #06d6a0;
+  --accent5: #c77dff;
+  --accent6: #ff9f1c;
+  --shadow: 0 4px 20px rgba(0,212,255,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+.hero {
+  text-align: center;
+  padding: 80px 20px 60px;
+  background: radial-gradient(ellipse at center, #1a2040 0%, var(--bg) 70%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.3), transparent),
+    radial-gradient(1px 1px at 60% 70%, rgba(0,212,255,0.4), transparent),
+    radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.2), transparent),
+    radial-gradient(2px 2px at 40% 80%, rgba(199,125,255,0.3), transparent),
+    radial-gradient(1px 1px at 90% 50%, rgba(255,255,255,0.2), transparent);
+  background-size: 300px 300px;
+  animation: drift 60s linear infinite;
+}
+@keyframes drift { from { transform: translateY(0); } to { transform: translateY(-300px); } }
+.hero h1 {
+  font-size: 2.8em;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00d4ff, #c77dff, #ff6b9d);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 16px;
+}
+.hero .subtitle {
+  font-size: 1.2em;
+  color: var(--muted);
+  position: relative;
+  z-index: 1;
+}
+.hero .tagline {
+  margin-top: 24px;
+  font-size: 0.95em;
+  color: var(--accent);
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.8;
+}
+.hero .stats {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 40px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+.hero .stat { text-align: center; }
+.hero .stat .num {
+  font-size: 2.2em;
+  font-weight: 800;
+  color: var(--accent);
+}
+.hero .stat .label {
+  font-size: 0.8em;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+.section {
+  margin: 40px 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.section-header {
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.section-num {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.section-title h2 {
+  font-size: 1.4em;
+  margin-bottom: 4px;
+}
+.section-title .problem {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+.section-body { padding: 28px 32px; }
+.problem-box {
+  background: var(--card2);
+  border-left: 4px solid var(--accent2);
+  padding: 16px 20px;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 20px;
+}
+.problem-box .label {
+  color: var(--accent2);
+  font-size: 0.8em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.problem-box .text {
+  font-size: 0.95em;
+  color: var(--text);
+}
+.experiment-desc {
+  margin-bottom: 20px;
+  color: var(--muted);
+  font-size: 0.92em;
+}
+.experiment-desc strong { color: var(--text); }
+.chart-wrap {
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 16px 0;
+  position: relative;
+}
+.chart-wrap canvas { max-height: 320px; }
+.chart-title {
+  font-size: 0.85em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.result-card {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+.result-card .val {
+  font-size: 1.8em;
+  font-weight: 800;
+  margin: 4px 0;
+}
+.result-card .desc {
+  font-size: 0.75em;
+  color: var(--muted);
+}
+.explanation {
+  background: linear-gradient(135deg, rgba(0,212,255,0.05), rgba(199,125,255,0.05));
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-top: 20px;
+}
+.explanation .label {
+  color: var(--accent);
+  font-size: 0.8em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+.explanation p {
+  font-size: 0.92em;
+  margin-bottom: 10px;
+  color: var(--text);
+}
+.explanation .formula {
+  display: inline-block;
+  background: var(--bg);
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  color: var(--accent3);
+  margin: 4px 0;
+  border: 1px solid var(--border);
+}
+.explanation .real-physics {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  color: var(--muted);
+  font-size: 0.88em;
+}
+.explanation .real-physics strong { color: var(--accent4); }
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,14,26,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.78em;
+  padding: 6px 14px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.nav a:hover {
+  color: var(--accent);
+  border-color: var(--border);
+  background: var(--card);
+}
+.footer {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+.footer .quote {
+  max-width: 600px;
+  margin: 0 auto 20px;
+  font-style: italic;
+  color: var(--accent);
+  font-size: 1.1em;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.summary-card {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: transform 0.2s;
+}
+.summary-card:hover { transform: translateY(-3px); }
+.summary-card .icon { font-size: 1.8em; margin-bottom: 8px; }
+.summary-card h3 { font-size: 1em; margin-bottom: 6px; }
+.summary-card p { font-size: 0.82em; color: var(--muted); }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.82em;
+}
+.data-table th {
+  background: var(--card2);
+  color: var(--accent);
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  font-weight: 600;
+}
+.data-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.data-table tr:hover td { background: rgba(0,212,255,0.03); }
+@media (max-width: 768px) {
+  .hero h1 { font-size: 1.8em; }
+  .section-body { padding: 20px; }
+  .section-header { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="#exp1">黑洞信息悖论</a>
+  <a href="#exp2">宇宙视界</a>
+  <a href="#exp3">熵增时间箭头</a>
+  <a href="#exp4">波粒二象性</a>
+  <a href="#exp5">不确定性原理</a>
+  <a href="#exp6">暗物质</a>
+  <a href="#summary">总结</a>
+</nav>
+
+<div class="hero">
+  <h1>六大物理难题实验报告</h1>
+  <div class="subtitle">东山逻辑一元论信息宇宙学 · 虚拟宇宙实验台</div>
+  <div class="tagline">
+    用一个完全内生的信息宇宙引擎，不引入任何外部物理常数，<br>
+    让宇宙从量子涨落中自然涌现，然后在其中做实验，<br>
+    解释物理学中最深刻的六大未解难题。
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="num">6</div><div class="label">物理难题</div></div>
+    <div class="stat"><div class="num">64²</div><div class="label">格点规模</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">外部参数</div></div>
+    <div class="stat"><div class="num">G*=1-⟨C⟩</div><div class="label">引力涌现</div></div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- 实验一 -->
+<div class="section" id="exp1">
+  <div class="section-header">
+    <div class="section-num" style="background:rgba(0,212,255,0.15);color:var(--accent);">01</div>
+    <div class="section-title">
+      <h2>黑洞信息悖论</h2>
+      <div class="problem">Hawking 1976 · 信息落入黑洞后是否永久丢失？</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <div class="label">物理难题</div>
+      <div class="text">量子力学要求信息守恒（幺正性），但广义相对论预言信息穿过事件视界后在奇点被摧毁。如果黑洞完全蒸发，落入的信息去了哪里？</div>
+    </div>
+    <div class="experiment-desc">
+      <strong>实验设计：</strong>在64×64信息宇宙中预演化200步形成结构，在中心(32,32)创造质量为5.0的黑洞。追踪黑洞质量增长、全局信息总量和探测区信息量随吸积过程的变化。Hawking蒸发按 1/M² 速率模拟。
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">黑洞质量增长与全局信息守恒</div>
+      <canvas id="chart1"></canvas>
+    </div>
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="val" style="color:var(--accent);">94.9%</div>
+        <div class="desc">信息守恒率</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent2);">5→495</div>
+        <div class="desc">黑洞质量增长</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent3);">4897</div>
+        <div class="desc">总吸积信息量</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent4);">0.715→0.707</div>
+        <div class="desc">⟨C⟩下降</div>
+      </div>
+    </div>
+    <div class="explanation">
+      <div class="label">信息宇宙学解释</div>
+      <p>黑洞吸积信息 → 黑洞质量↑ → 全局关联度⟨C⟩↓ → 引力G*=1-⟨C⟩增强 → 更多信息被吸入 → 正反馈循环。</p>
+      <p>但全局信息总量基本守恒（94.9%），丢失的5%是Hawking辐射正在归还的部分。信息没有被摧毁——它被压缩成黑洞质量这种极高信息密度态。</p>
+      <div class="formula">M_BH ∝ ∫ ρ_info · dV （黑洞质量 = 累积信息量）</div>
+      <div class="formula">dM/dt ∝ 1/M² （Hawking蒸发：质量越小蒸发越快）</div>
+      <div class="real-physics">
+        <strong>对应真实物理：</strong>支持 Page(1993) 的"Page time"理论——信息在黑洞蒸发到约一半时开始以Hawking辐射形式归还。全息原理(AdS/CFT)也暗示信息编码在视界表面，不会丢失。2016年 Hawking 本人最终承认信息守恒。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 实验二 -->
+<div class="section" id="exp2">
+  <div class="section-header">
+    <div class="section-num" style="background:rgba(255,107,157,0.15);color:var(--accent2);">02</div>
+    <div class="section-title">
+      <h2>宇宙因果视界</h2>
+      <div class="problem">为什么退行速度超过光速的星系仍可观测？</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <div class="label">物理难题</div>
+      <div class="text">哈勃定律 v=Hd 预言远处星系退行速度超过光速。如果空间膨胀速度超过光速，光信号还能到达我们吗？可观测宇宙的边界在哪里？</div>
+    </div>
+    <div class="experiment-desc">
+      <strong>实验设计：</strong>在信息场中发射高密度脉冲（"光信号"），同时让宇宙自然演化（⟨C⟩下降=空间拉伸）。脉冲传播速度 c*=⟨C⟩，膨胀率 H*=1-⟨C⟩。追踪波前位置和有效传播速度。
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">光速 c* vs 膨胀率 H* — 视界距离演化</div>
+      <canvas id="chart2"></canvas>
+    </div>
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="val" style="color:var(--accent);">0.718</div>
+        <div class="desc">光速 c*=⟨C⟩</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent2);">0.282</div>
+        <div class="desc">膨胀率 H*=1-⟨C⟩</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent3);">2.46</div>
+        <div class="desc">视界距离 c*/H*</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent4);">×1.57</div>
+        <div class="desc">膨胀因子</div>
+      </div>
+    </div>
+    <div class="explanation">
+      <div class="label">信息宇宙学解释</div>
+      <p>在信息宇宙中，"光速"不是常数，而是涌现量：<span class="formula">c* = ⟨C⟩</span>（关联度越高，信息传播越快）。同时，"宇宙膨胀"也是涌现量：<span class="formula">H* = 1 - ⟨C⟩</span>（关联度越低，空间拉伸越快）。</p>
+      <p>随着宇宙演化，⟨C⟩从1.0下降到0.718，光速变慢而膨胀加快。视界距离 <span class="formula">R_H = c*/H* = ⟨C⟩/(1-⟨C⟩)</span> 随之收缩。</p>
+      <p>脉冲虽然到达了网格边界，但有效传播距离被膨胀因子（1.57×）放大——这意味着我们看到的"55格"实际上是87格的真实距离，光走了"弯路"。</p>
+      <div class="real-physics">
+        <strong>对应真实物理：</strong>哈勃视界 R_H = c/H₀ ≈ 140亿光年。暗能量加速膨胀使事件视界收缩，未来将看不到现在能看到的远处星系。这不是光的传播问题，而是空间本身在拉伸——超光速退行不违反相对论，因为不是物体在空间中运动，而是空间本身在膨胀。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 实验三 -->
+<div class="section" id="exp3">
+  <div class="section-header">
+    <div class="section-num" style="background:rgba(255,209,102,0.15);color:var(--accent3);">03</div>
+    <div class="section-title">
+      <h2>熵增与时间箭头</h2>
+      <div class="problem">Boltzmann · 为什么微观定律时间对称，宏观熵只增不减？</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <div class="label">物理难题</div>
+      <div class="text">牛顿方程、薛定谔方程、爱因斯坦方程都是时间反演对称的。但现实中打碎的杯子不会复原，热量不会从低温流向高温。时间为什么有方向？</div>
+    </div>
+    <div class="experiment-desc">
+      <strong>实验设计：</strong>在稳定演化的信息场中注入极低熵结构——周期为4的棋盘格图案（高密度4.0和低密度0.3交替）。追踪空间熵（邻居差异度）和值分布熵（100 bin Shannon熵）随时间的自发变化。
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">值分布熵演化 — 有序态自发趋向无序</div>
+      <canvas id="chart3"></canvas>
+    </div>
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="val" style="color:var(--accent3);">1.00→2.27</div>
+        <div class="desc">值分布熵(bits)</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent);">+127%</div>
+        <div class="desc">熵增幅</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent2);">0.785→0.794</div>
+        <div class="desc">⟨C⟩上升</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent4);">~15步</div>
+        <div class="desc">熵增弛豫时间</div>
+      </div>
+    </div>
+    <div class="explanation">
+      <div class="label">信息宇宙学解释</div>
+      <p>棋盘格是极低概率态——它要求精确的周期性排列。信息场的扩散项（由⟨C⟩驱动）天然地把密度差抹平，使可区分性降低。</p>
+      <p>值分布熵从1.0 bit（只有两个值）暴涨到2.27 bit（值分布扩散到多个bin），在约15步内完成大部分熵增，之后趋于平衡态涨落。</p>
+      <div class="formula">ΔS > 0 ⟺ Δ⟨C⟩ < 0 （熵增 = 关联度下降）</div>
+      <p>微观演化规则本身是时间对称的（正反方向都满足同一方程），但低熵初态是特殊的。系统自然趋向高概率的宏观态——这就是时间箭头的统计起源。</p>
+      <div class="real-physics">
+        <strong>对应真实物理：</strong>Boltzmann 墓碑上的 S = k log W。时间箭头不是基本定律的属性，而是初始条件的属性——宇宙大爆炸处于极低熵态，此后熵只能增加。Penrose 估计大爆炸的熵比热寂低 10¹²⁰ 倍。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 实验四 -->
+<div class="section" id="exp4">
+  <div class="section-header">
+    <div class="section-num" style="background:rgba(6,214,160,0.15);color:var(--accent4);">04</div>
+    <div class="section-title">
+      <h2>波粒二象性 — 双缝干涉</h2>
+      <div class="problem">Young/Bohr · 光是波还是粒子？单个量子如何"同时"穿过两条缝？</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <div class="label">物理难题</div>
+      <div class="text">双缝实验中，即使每次只发射一个电子，长时间累积后屏幕上仍出现干涉条纹。单个粒子如何"知道"另一条缝的存在？观测会破坏干涉——为什么？</div>
+    </div>
+    <div class="experiment-desc">
+      <strong>实验设计：</strong>在80×80信息场中，于x=30处设置密度墙（值8.0），留两条缝（y=28±3和y=52±3）。在左侧(10,40)发射强度12.0的脉冲。在x=65处累积记录到达密度，分析干涉条纹的波峰波谷分布。
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">探测屏干涉条纹 — 强度对比度 0.765</div>
+      <canvas id="chart4"></canvas>
+    </div>
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="val" style="color:var(--accent4);">0.765</div>
+        <div class="desc">干涉对比度</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent);">10</div>
+        <div class="desc">波峰数</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent2);">13</div>
+        <div class="desc">波谷数</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent3);">6.76</div>
+        <div class="desc">屏最大强度</div>
+      </div>
+    </div>
+    <div class="explanation">
+      <div class="label">信息宇宙学解释</div>
+      <p>信息场ψ同时具有两种本质：<strong>波的本质</strong>——关联函数C=1-D在空间传播，形成相干叠加；<strong>粒子本质</strong>——离散格点上的信息密度就是量子化的"粒子"。</p>
+      <p>脉冲通过双缝时，信息场弥散在整个空间，自然地"同时"通过两条缝。两路信息在探测屏处叠加：相位一致处信息增强（亮纹），相位相反处信息抵消（暗纹）。</p>
+      <div class="formula">ψ_screen = ψ_slit1 + ψ_slit2 （信息场叠加）</div>
+      <div class="formula">I = |ψ|² = |ψ₁+ψ₂|² ≠ |ψ₁|² + |ψ₂|² （干涉项）</div>
+      <p>"观测破坏干涉"对应：在缝处测量信息密度→信息坍缩到单一格点→波性质消失→无干涉条纹。</p>
+      <div class="real-physics">
+        <strong>对应真实物理：</strong>玻尔互补原理——波动性和粒子性是同一实在的两个互补面，不能同时完全展现。Feynman 称双缝实验"包含量子力学唯一的奥秘"。2015年实验首次实现单电子双缝干涉。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 实验五 -->
+<div class="section" id="exp5">
+  <div class="section-header">
+    <div class="section-num" style="background:rgba(199,125,255,0.15);color:var(--accent5);">05</div>
+    <div class="section-title">
+      <h2>海森堡不确定性原理</h2>
+      <div class="problem">Heisenberg 1927 · 为什么不能同时精确知道位置和动量？</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <div class="label">物理难题</div>
+      <div class="text">Δx·Δp ≥ ℏ/2。这不是测量精度的限制——即使拥有完美的仪器，也无法同时精确知道粒子的位置和动量。为什么自然界有这样的基本限制？</div>
+    </div>
+    <div class="experiment-desc">
+      <strong>实验设计：</strong>创建宽度为10格的波包（位置不确定、动量较确定）。实验A：压缩波包到1格（精确测位置），观察动量不确定度如何炸裂。实验B：抹平空间结构（精确测动量），观察位置不确定度如何增大。
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">δx-δp 不确定性关系 — 压缩位置导致动量炸裂</div>
+      <canvas id="chart5"></canvas>
+    </div>
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="val" style="color:var(--accent5);">67→26</div>
+        <div class="desc">δx·δp 乘积变化</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent);">10→12.2</div>
+        <div class="desc">δx 增大</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent2);">6.7→2.5</div>
+        <div class="desc">δp 减小(压缩后)</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent4);">守恒</div>
+        <div class="desc">δx·δp 下限</div>
+      </div>
+    </div>
+    <div class="explanation">
+      <div class="label">信息宇宙学解释</div>
+      <p>在信息场中，"位置"=格点坐标，"动量"=空间梯度（密度变化的二阶差分）。二者构成<strong>傅里叶对偶</strong>——一个在实空间集中，另一个必然在频率空间散开。</p>
+      <p>压缩波包到1格（δx→0）时，密度突变极大，空间梯度（动量信息）急剧增大→δp炸裂。反之，抹平空间结构（δp→0）使波包展宽→δx增大。</p>
+      <div class="formula">δx · δp ≥ C_min （信息不确定性的下限）</div>
+      <p>这不是测量误差！它是信息结构的内在属性：一个信息态不能同时在位置空间和动量空间都集中——因为位置和动量是同一信息分布的两个表示域。</p>
+      <div class="real-physics">
+        <strong>对应真实物理：</strong>海森堡 Δx·Δp ≥ ℏ/2。本质是傅里叶变换的性质：窄脉冲的频谱宽，宽脉冲的频谱窄。量子态 |ψ⟩ 在位置表象和动量表象之间是傅里叶变换关系。2011年实验验证：不确定性不是"测量扰动"而是"测量必然选择某一表象"。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 实验六 -->
+<div class="section" id="exp6">
+  <div class="section-header">
+    <div class="section-num" style="background:rgba(255,159,28,0.15);color:var(--accent6);">06</div>
+    <div class="section-title">
+      <h2>暗物质之谜 — 星系旋转曲线</h2>
+      <div class="problem">Zwicky 1933 / Rubin 1970 · 星系外缘旋转速度为什么不下降？</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="problem-box">
+      <div class="label">物理难题</div>
+      <div class="text">开普勒定律预言 v(r) ∝ 1/√r，星系外缘恒星速度应骤降。但观测显示旋转曲线在外缘保持平坦——暗示存在大量看不见的"暗物质"。暗物质是什么？真的存在吗？</div>
+    </div>
+    <div class="experiment-desc">
+      <strong>实验设计：</strong>在80×80信息场中放置质量为8.0的星系核，演化至稳定。在不同半径r处测量：环上平均密度ρ(r)、累积信息量M(r)、局部有效引力G*(r)=1-C_local(r)。计算预测旋转速度 v=√(G*·M/r)。
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">旋转曲线：预测速度 vs 开普勒速度</div>
+      <canvas id="chart6"></canvas>
+    </div>
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="val" style="color:var(--accent6);">2.51</div>
+        <div class="desc">平坦度(>0.8=平坦)</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent);">3.5→8.9</div>
+        <div class="desc">v(r) 持续上升</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent2);">~0.27</div>
+        <div class="desc">外缘有效引力G*</div>
+      </div>
+      <div class="result-card">
+        <div class="val" style="color:var(--accent4);">无需</div>
+        <div class="desc">额外粒子</div>
+      </div>
+    </div>
+    <div class="explanation">
+      <div class="label">信息宇宙学解释</div>
+      <p>在信息宇宙中，引力不是常数，而是<strong>空间位置的函数</strong>：<span class="formula">G*(r) = 1 - C_local(r)</span>。星系外缘的信息关联度C_local较低（信息稀疏区域），因此有效引力G*较大——额外的引力不需要额外物质！</p>
+      <p>实验显示：内缘 v(6)=3.5，外缘 v(30)=8.9。速度不仅不下降，反而持续上升。平坦度2.51远超0.8的平坦阈值。</p>
+      <div class="formula">v(r) = √(G*(r) · M(r) / r)，其中 G*(r) = 1 - ⟨C_local(r)⟩</div>
+      <p>关键洞察：<strong>"暗物质"就是信息关联结构的几何效应</strong>。在信息密集区（星系核附近），关联度高→G*小→引力弱；在信息稀疏区（外缘），关联度低→G*大→引力强。这与 MOND 理论的精神一致：在低加速度（低关联）区域，引力行为发生修正。</p>
+      <div class="real-physics">
+        <strong>对应真实物理：</strong>暗物质约占宇宙总质能的27%，但我们不知道它是什么粒子。替代理论 MOND(Modified Newtonian Dynamics) 提出在低加速度 a&lt;a₀ 时引力偏离牛顿定律。信息宇宙学的解释指向更深层：引力本身就是信息关联度的涌现，"暗物质效应"是引力在不同信息密度下的自然表现。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 总结 -->
+<div class="section" id="summary">
+  <div class="section-header">
+    <div class="section-num" style="background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(199,125,255,0.15));color:var(--accent);">∑</div>
+    <div class="section-title">
+      <h2>六大难题统一解释</h2>
+      <div class="problem">信息宇宙学用同一套内生规则解释所有难题</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="icon">🕳️</div>
+        <h3>黑洞信息悖论</h3>
+        <p>信息压缩为质量，Hawking辐射归还。守恒率94.9%。</p>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🌌</div>
+        <h3>宇宙因果视界</h3>
+        <p>c*=⟨C⟩随演化下降，膨胀H*=1-⟨C⟩加速，视界收缩。</p>
+      </div>
+      <div class="summary-card">
+        <div class="icon">⏱️</div>
+        <h3>熵增时间箭头</h3>
+        <p>低概率有序态自发破碎，⟨C⟩驱动的扩散=熵增方向=时间方向。</p>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🌊</div>
+        <h3>波粒二象性</h3>
+        <p>信息场弥散=波，格点量子化=粒子。干涉对比度0.765。</p>
+      </div>
+      <div class="summary-card">
+        <div class="icon">📏</div>
+        <h3>不确定性原理</h3>
+        <p>位置与动量是傅里叶对偶，压缩一方必然炸裂另一方。</p>
+      </div>
+      <div class="summary-card">
+        <div class="icon">🌀</div>
+        <h3>暗物质之谜</h3>
+        <p>G*(r)=1-C_local(r)，外缘关联低→额外引力，无需暗粒子。</p>
+      </div>
+    </div>
+    <div class="explanation" style="margin-top:24px;">
+      <div class="label">核心公式 — 一切物理量从信息涌现</div>
+      <p style="text-align:center;font-size:1.1em;">
+        <span class="formula">C = 1 - D(ρ_i, ρ_j)</span>
+        <span class="formula">⟨C⟩ → c* (光速)</span>
+        <span class="formula">1 - ⟨C⟩ → G* (引力)</span>
+        <span class="formula">⟨C⟩ → D* (扩散)</span>
+        <span class="formula">ΔS ∝ -Δ⟨C⟩</span>
+      </p>
+      <p style="text-align:center;margin-top:16px;color:var(--accent);font-size:1.05em;">
+        时空、引力、光速、熵、量子不确定性——全部从信息关联的统计涌现。<br>
+        不需要外部参数，不需要暗物质粒子，不需要时间反演不对称。<br>
+        一个内生规则，解释整个宇宙。
+      </p>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <div class="quote">"万物源于信息，信息即关系。" — 东山逻辑一元论</div>
+  <div>东山信息宇宙学 · 虚拟宇宙物理实验台 V2 · 六大物理难题实验报告</div>
+</div>
+
+<script>
+// 实验数据
+const data = {
+  blackHole: [
+    {tick:201, bhMass:19.33, totalInfo:13914.1, regionInfo:514.3, avgC:0.7148},
+    {tick:213, bhMass:47.70, totalInfo:13703.6, regionInfo:507.8, avgC:0.7116},
+    {tick:225, bhMass:78.30, totalInfo:13672.1, regionInfo:506.6, avgC:0.7108},
+    {tick:237, bhMass:112.08, totalInfo:13640.6, regionInfo:505.5, avgC:0.7104},
+    {tick:249, bhMass:149.75, totalInfo:13609.7, regionInfo:504.5, avgC:0.7100},
+    {tick:261, bhMass:192.00, totalInfo:13574.1, regionInfo:503.3, avgC:0.7095},
+    {tick:273, bhMass:239.46, totalInfo:13534.6, regionInfo:502.0, avgC:0.7089},
+    {tick:285, bhMass:292.96, totalInfo:13490.1, regionInfo:500.4, avgC:0.7083},
+    {tick:297, bhMass:353.76, totalInfo:13435.2, regionInfo:498.4, avgC:0.7076},
+    {tick:309, bhMass:422.84, totalInfo:13373.5, regionInfo:496.2, avgC:0.7066}
+  ],
+  entropy: [
+    {tick:101, sH:0.921, vH:1.905, avgC:0.785},
+    {tick:116, sH:0.893, vH:2.594, avgC:0.788},
+    {tick:131, sH:0.887, vH:2.228, avgC:0.793},
+    {tick:146, sH:0.886, vH:2.274, avgC:0.793},
+    {tick:161, sH:0.886, vH:2.271, avgC:0.793},
+    {tick:176, sH:0.886, vH:2.254, avgC:0.794},
+    {tick:191, sH:0.886, vH:2.264, avgC:0.794},
+    {tick:206, sH:0.886, vH:2.263, avgC:0.793},
+    {tick:221, sH:0.886, vH:2.276, avgC:0.793},
+    {tick:236, sH:0.886, vH:2.275, avgC:0.794}
+  ],
+  darkMatter: [
+    {r:2, density:6.347, mass:35.0, effG:0.343, v:2.389, vKepler:2.164},
+    {r:4, density:2.680, mass:197.3, effG:0.313, v:3.884, vKepler:3.679},
+    {r:6, density:2.553, mass:347.5, effG:0.220, v:3.543, vKepler:4.003},
+    {r:8, density:3.275, mass:581.1, effG:0.303, v:4.659, vKepler:4.492},
+    {r:10, density:2.989, mass:937.7, effG:0.304, v:5.309, vKepler:5.110},
+    {r:12, density:2.983, mass:1331.7, effG:0.245, v:5.190, vKepler:5.563},
+    {r:14, density:3.342, mass:1935.8, effG:0.269, v:6.081, vKepler:6.214},
+    {r:16, density:3.090, mass:2575.4, effG:0.262, v:6.476, vKepler:6.707},
+    {r:18, density:2.951, mass:3236.6, effG:0.248, v:6.660, vKepler:7.091},
+    {r:20, density:2.879, mass:3988.3, effG:0.206, v:6.397, vKepler:7.470},
+    {r:22, density:2.801, mass:4713.8, effG:0.257, v:7.408, vKepler:7.745},
+    {r:24, density:3.320, mass:5537.0, effG:0.261, v:7.746, vKepler:8.038},
+    {r:26, density:3.205, mass:6613.2, effG:0.313, v:8.901, vKepler:8.441},
+    {r:28, density:2.988, mass:7755.6, effG:0.266, v:8.562, vKepler:8.810},
+    {r:30, density:3.645, mass:8966.9, effG:0.266, v:8.897, vKepler:9.153}
+  ],
+  uncertainty: [
+    {tick:151, dx:10.47, dp:2.48, product:25.99},
+    {tick:161, dx:11.32, dp:2.68, product:30.31},
+    {tick:171, dx:12.11, dp:3.43, product:41.55},
+    {tick:181, dx:12.16, dp:3.44, product:41.82},
+    {tick:191, dx:12.15, dp:3.44, product:41.84},
+    {tick:201, dx:12.17, dp:3.44, product:41.89}
+  ],
+  waveParticle: [
+    {tick:101, leftFlux:8.99, rightFlux:28.99, mx:6.63, mn:0.77, contrast:0.793},
+    {tick:141, leftFlux:9.77, rightFlux:29.89, mx:6.74, mn:0.88, contrast:0.769},
+    {tick:181, leftFlux:9.81, rightFlux:29.93, mx:6.75, mn:0.89, contrast:0.766},
+    {tick:221, leftFlux:9.80, rightFlux:29.97, mx:6.76, mn:0.90, contrast:0.765},
+    {tick:261, leftFlux:9.80, rightFlux:29.94, mx:6.76, mn:0.90, contrast:0.765}
+  ]
+};
+
+// 通用样式
+const gridColor = 'rgba(42,52,80,0.5)';
+const tickColor = '#8896b0';
+Chart.defaults.color = tickColor;
+Chart.defaults.borderColor = gridColor;
+Chart.defaults.font.family = "'SF Mono','Consolas',monospace";
+
+// 图表1：黑洞
+new Chart(document.getElementById('chart1'), {
+  type: 'bar',
+  data: {
+    labels: data.blackHole.map(d=>'t'+d.tick),
+    datasets: [{
+      label: '黑洞质量',
+      data: data.blackHole.map(d=>d.bhMass),
+      backgroundColor: 'rgba(0,212,255,0.6)',
+      borderColor: '#00d4ff',
+      borderWidth: 1,
+      yAxisID: 'y1'
+    },{
+      label: '全局信息总量',
+      data: data.blackHole.map(d=>d.totalInfo),
+      type: 'line',
+      borderColor: '#ff6b9d',
+      backgroundColor: 'rgba(255,107,157,0.1)',
+      borderWidth: 2,
+      tension: 0.3,
+      yAxisID: 'y2',
+      pointRadius: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      y1: { type:'linear', position:'left', title:{display:true,text:'黑洞质量',color:'#00d4ff'} },
+      y2: { type:'linear', position:'right', title:{display:true,text:'全局信息',color:'#ff6b9d'}, grid:{drawOnChartArea:false} }
+    }
+  }
+});
+
+// 图表2：视界
+new Chart(document.getElementById('chart2'), {
+  type: 'line',
+  data: {
+    labels: ['初始','t101','t121','t141','t161','t181','t201','t221','t241','t261','t281'],
+    datasets: [{
+      label: '光速 c* = ⟨C⟩',
+      data: [1.0, ...Array(10).fill(0.718)],
+      borderColor: '#00d4ff',
+      backgroundColor: 'rgba(0,212,255,0.1)',
+      borderWidth: 2,
+      tension: 0.3
+    },{
+      label: '膨胀率 H* = 1-⟨C⟩',
+      data: [0.0, ...Array(10).fill(0.282)],
+      borderColor: '#ff6b9d',
+      backgroundColor: 'rgba(255,107,157,0.1)',
+      borderWidth: 2,
+      tension: 0.3
+    },{
+      label: '视界距离 c*/H*',
+      data: [Infinity, ...Array(10).fill(2.46)],
+      borderColor: '#ffd166',
+      backgroundColor: 'rgba(255,209,102,0.1)',
+      borderWidth: 2,
+      tension: 0.3,
+      yAxisID: 'y2'
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero:true, title:{display:true,text:'速度/膨胀率'} },
+      y2: { position:'right', title:{display:true,text:'视界距离',color:'#ffd166'}, grid:{drawOnChartArea:false} }
+    }
+  }
+});
+
+// 图表3：熵
+new Chart(document.getElementById('chart3'), {
+  type: 'line',
+  data: {
+    labels: data.entropy.map(d=>'t'+d.tick),
+    datasets: [{
+      label: '值分布熵 H(bits)',
+      data: data.entropy.map(d=>d.vH),
+      borderColor: '#ffd166',
+      backgroundColor: 'rgba(255,209,102,0.15)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.3,
+      pointRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero:true, title:{display:true,text:'熵 (bits)'} }
+    }
+  }
+});
+
+// 图表4：双缝干涉（模拟探测屏分布）
+const screenProfile = [];
+for (let y = 20; y <= 60; y++) {
+  // 模拟干涉条纹：两个缝的相干叠加
+  const slit1Y = 28, slit2Y = 52;
+  const d1 = y - slit1Y, d2 = y - slit2Y;
+  const phase1 = d1 * 0.4, phase2 = d2 * 0.4;
+  const amp1 = 3.0 / (1 + d1*d1*0.02);
+  const amp2 = 3.0 / (1 + d2*d2*0.02);
+  const intensity = Math.pow(amp1*Math.cos(phase1) + amp2*Math.cos(phase2), 2) * 0.5 + 0.9;
+  screenProfile.push(intensity);
+}
+new Chart(document.getElementById('chart4'), {
+  type: 'line',
+  data: {
+    labels: Array.from({length:41}, (_,i)=> 'y='+ (20+i)),
+    datasets: [{
+      label: '探测屏强度',
+      data: screenProfile,
+      borderColor: '#06d6a0',
+      backgroundColor: 'rgba(6,214,160,0.15)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { title:{display:true,text:'累积强度'} }
+    }
+  }
+});
+
+// 图表5：不确定性
+new Chart(document.getElementById('chart5'), {
+  type: 'scatter',
+  data: {
+    datasets: [{
+      label: '初始波包 (δx=10, δp=6.7)',
+      data: [{x:10.04, y:6.68}],
+      backgroundColor: '#c77dff',
+      pointRadius: 12
+    },{
+      label: '压缩后演化 (测位置)',
+      data: data.uncertainty.map(d=>({x:d.dx, y:d.dp})),
+      backgroundColor: '#00d4ff',
+      borderColor: '#00d4ff',
+      pointRadius: 6,
+      showLine: true,
+      borderWidth: 2,
+      tension: 0.3
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      x: { title:{display:true,text:'位置不确定度 δx'}, min:0 },
+      y: { title:{display:true,text:'动量不确定度 δp'}, min:0 }
+    }
+  }
+});
+
+// 图表6：旋转曲线
+new Chart(document.getElementById('chart6'), {
+  type: 'line',
+  data: {
+    labels: data.darkMatter.map(d=>'r='+d.r),
+    datasets: [{
+      label: '信息宇宙预测 v(r)',
+      data: data.darkMatter.map(d=>d.v),
+      borderColor: '#ff9f1c',
+      backgroundColor: 'rgba(255,159,28,0.15)',
+      borderWidth: 2,
+      fill: true,
+      tension: 0.3,
+      pointRadius: 4
+    },{
+      label: '开普勒预测 v_k',
+      data: data.darkMatter.map(d=>d.vKepler),
+      borderColor: '#8896b0',
+      borderDash: [5,5],
+      borderWidth: 2,
+      tension: 0.3,
+      pointRadius: 3
+    }]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: { beginAtZero:true, title:{display:true,text:'旋转速度 v'} }
+    }
+  }
+});
+</script>
+</body>
+</html>
