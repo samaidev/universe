@@ -1,0 +1,8 @@
+build/
+universe
+*.o
+*.a
+*.so
+*.log
+core
+.DS_Store
